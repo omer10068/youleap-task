@@ -279,3 +279,128 @@ input and pill/select clicks as actual browser interactions (no browser-automati
 available in this environment) — the URL-construction logic they call
 (`updateFilters`/`goToPage`) was exercised directly via the curl checks above, since it
 produces the same URLs a real click would.
+
+## Phase 4 — Quick View modal
+
+Adds the Quick View modal, variant selector, and Add to Cart wiring. Still no cart
+drawer, checkout, or `localStorage`.
+
+### Reuses grid data, no refetch by id
+
+`ProductGrid` already receives the full `Product` objects from the Server Component
+(same shape `GET /api/products/:id` would return), so `QuickViewModal` takes a
+non-null `product` prop directly instead of fetching by id. This was flagged as an open
+question all the way back in the initial audit; it's no longer ambiguous once the grid
+genuinely holds the complete `Product` type. The tradeoff this forecloses: a
+deep-linkable Quick View URL (opened without the grid ever being fetched) would need a
+real fetch — explicitly out of scope for this phase.
+
+### Modal state lives in `ProductGrid`, not a new controller
+
+`ProductGrid` already owned the click handler as of Phase 2 (originally a `console.log`
+placeholder). It now holds `selectedProduct: Product | null` and conditionally renders
+`QuickViewModal`, which can assume a non-null `product` — no separate controller
+component, no null-guards threaded through the modal itself.
+
+### Initial variant selection
+
+Opens on the first in-stock variant (`product.variants.find(isVariantInStock)`),
+falling back to `product.variants[0]` only if every variant is out of stock (no product
+in the mock data actually hits that fallback — verified by simulating an all-OOS
+product against the real fallback logic, since the dataset itself can't exercise it).
+Opening on an in-stock variant means the modal shows a real, purchasable price and
+"In stock" state immediately, rather than requiring the user to click through options
+first. `getVariantOptionValues` converts that variant into the initial
+`Record<optionId, value>` selection.
+
+### Structural unavailability vs. out-of-stock are different UI states
+
+These are two different conditions found during the original audit, and conflating
+them would be wrong:
+
+- **No variant exists at all** for a combination (`prod_20`'s King+Slate) — the option
+  value is **disabled** in `VariantSelector`, via `getAvailableOptionValues`. There's no
+  SKU or price behind it; a disabled pill is the honest representation, not a
+  compromise.
+- **A variant exists but `inventory_quantity` is 0** (`prod_01`'s Navy Blue,
+  `prod_03`/`prod_08`'s other OOS variants) — the option stays **selectable**. Once
+  selected, the modal shows an "Out of stock" state and disables Add to Cart, but
+  hiding the option entirely would hide the fact that the variant — and its price —
+  exist at all.
+
+`prod_14` is the other real edge case exercised here: it declares exactly one option
+(`Size`) despite its variant titles carrying an unmodeled "Black" suffix
+(`variant-utils.ts`'s Phase 1 fix already handles the parsing) — `VariantSelector`
+renders exactly one option group for it, not a phantom second one, confirmed by
+checking `Object.keys(selection).length === 1` against the real fixture.
+
+### Add to Cart: stays open, inline confirmation, no toast
+
+Clicking Add to Cart dispatches `ADD_ITEM` with the *matched* variant's live
+price/stock (not `getStartingPrice`, which is a grid-card-only concern), adds exactly 1
+unit, and does not close the modal. The button label flips to "Added!" for 1.5s via
+local state, then reverts — no toast/notification system, which would be real added
+state (stacking, positioning) for a signal a one-line button-label change already
+covers. A quantity stepper was deliberately left out of this phase: the cart reducer's
+`UPDATE_QUANTITY` action (built in Phase 1) already exists for that, and it has a more
+natural home in the cart drawer where the whole cart — not just one product — is
+visible.
+
+### Focus restoration uses the exact clicked element, not `document.activeElement`
+
+`ProductCard`'s Quick View button now calls `onQuickView(product, event.currentTarget)`
+instead of `onQuickView(product)`. The simpler alternative — reading
+`document.activeElement` inside `ProductGrid`'s handler — was considered and rejected:
+Safari and Firefox don't always move focus to a button on click (a known cross-browser
+quirk), so `document.activeElement` isn't reliably the clicked button in every browser.
+Passing the element explicitly via `event.currentTarget` is correct regardless of that
+quirk. `ProductGrid` stores it in a ref and calls `.focus()` on it after closing the
+modal, for every close path (Escape, backdrop, close button) — they all funnel through
+the same `onClose` callback.
+
+### Accessibility
+
+`role="dialog"`, `aria-modal="true"`, `aria-labelledby` (product title),
+`aria-describedby` (description), rendered via `createPortal` into `document.body`
+(avoids z-index/clipping risk from the grid's own containers — built into `react-dom`,
+not a new dependency). Escape closes; backdrop click closes only when
+`event.target === event.currentTarget`, so clicks inside the dialog content don't
+bubble up and close it. Body scroll is locked while open and restored to its previous
+value (not just `""`) on cleanup. Focus moves to the close button on open and returns
+to the exact trigger button on close (see above). Tab cycling is a small, inline
+implementation scoped to this modal's actual focusable elements, re-queried on every
+Tab press since the set changes as option availability changes (an out-of-stock pill
+becoming enabled/disabled doesn't require re-wiring anything) — deliberately not a
+reusable `useFocusTrap` hook or a generic dialog abstraction, since that's
+solving a problem this app doesn't have.
+
+### `localStorage` still deferred, but the reason has changed
+
+This is the third time persistence has been deferred, but not for the same reason as
+before. Phases 2 and 3 deferred it because there was no real Add-to-Cart flow to verify
+it against — that condition is resolved now. It's still not in this phase because Phase
+4 is already substantial (modal, variant selector, cart wiring, accessibility); it
+becomes the small, first item of Phase 5, verified immediately against the real
+Add-to-Cart flow this phase delivers, rather than continuing to ride along with
+whichever phase happens to build the cart drawer.
+
+### Verification for Quick View
+
+`pnpm typecheck`, `pnpm lint`, and `pnpm build` are all clean — the production build
+specifically confirms the new client-component tree (`ProductGrid` → `QuickViewModal`
+→ `VariantSelector`, plus the `createPortal` call) composes without any Server/Client
+boundary violation. Quick View is fully client-side interactive (clicks, focus,
+portal rendering), and no browser-automation tool is available in this environment, so
+actual clicking/keyboard interaction in a real browser was not exercised directly. What
+was verified with a disposable script (not committed) against the real
+`mock-data/products.json`, mirroring the exact logic `QuickViewModal` runs: `prod_01`'s
+initial variant resolves to the in-stock Black, not Navy Blue; selecting Navy Blue
+resolves to a real, selectable-but-out-of-stock variant; `prod_20`'s King+Slate has no
+matching variant and Slate is excluded from available values once King is picked;
+`prod_14` produces exactly one option in its initial selection; `prod_03` and `prod_08`
+also default to an in-stock variant; the all-out-of-stock `variants[0]` fallback path
+was exercised against a simulated product, since no real product in the dataset hits
+it; and the cart reducer, driven with the exact item shape `QuickViewModal` constructs,
+confirms two Add to Cart clicks on the same variant produce one line at quantity 2 (not
+two lines), a different variant of the same product produces a second line, and the
+header's count (sum of quantities) reads 3 after those three clicks.
