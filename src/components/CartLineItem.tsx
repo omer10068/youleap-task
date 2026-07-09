@@ -1,9 +1,9 @@
 "use client"
 
-import Image from "next/image"
 import { Minus, Plus, X } from "lucide-react"
 import type { CartItem } from "@/types/cart"
 import { formatPrice } from "@/lib/format-price"
+import SafeImage from "@/components/SafeImage"
 
 type CartLineItemProps = {
   item: CartItem
@@ -24,7 +24,7 @@ export default function CartLineItem({
   return (
     <li className="flex gap-4 py-5">
       <div className="relative size-20 shrink-0 overflow-hidden rounded-xl border border-[oklch(0.9_0.01_75)] bg-[oklch(0.95_0.008_83)]">
-        <Image src={item.thumbnail} alt={item.title} fill sizes="80px" className="object-cover" />
+        <SafeImage src={item.thumbnail} alt={item.title} sizes="80px" className="object-cover" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react"
 import { createPortal } from "react-dom"
-import Image from "next/image"
 import { Check, ChevronLeft, ChevronRight, ShoppingBag, X } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useCart } from "@/lib/cart-context"
@@ -14,6 +13,7 @@ import {
   isVariantInStock,
 } from "@/lib/variant-utils"
 import VariantSelector from "@/components/VariantSelector"
+import SafeImage from "@/components/SafeImage"
 
 type QuickViewModalProps = {
   product: Product
@@ -123,14 +123,13 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
           {/* Gallery */}
           <div className="flex flex-col gap-3 bg-[oklch(0.95_0.008_83)] p-4 sm:p-6">
             <div className="relative aspect-square overflow-hidden rounded-2xl border border-[oklch(0.9_0.01_75)]/60 bg-white">
-              <Image
+              <SafeImage
                 src={gallery[selectedImageIndex]}
                 alt={
                   hasMultipleImages
                     ? `${product.title} — image ${selectedImageIndex + 1} of ${gallery.length}`
                     : product.title
                 }
-                fill
                 sizes="(max-width: 640px) 100vw, 40vw"
                 className="object-cover"
                 priority
@@ -183,7 +182,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                         : "border-[oklch(0.9_0.01_75)] hover:border-stone-400"
                     }`}
                   >
-                    <Image src={src} alt="" fill sizes="64px" className="object-cover" />
+                    <SafeImage src={src} alt="" sizes="64px" className="object-cover" />
                   </button>
                 ))}
               </div>

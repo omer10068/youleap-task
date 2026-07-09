@@ -1,10 +1,10 @@
 "use client"
 
-import Image from "next/image"
 import { Fraunces } from "next/font/google"
 import type { Product } from "@/types/product"
 import { getStartingPrice } from "@/lib/variant-utils"
 import { formatPrice } from "@/lib/format-price"
+import SafeImage from "@/components/SafeImage"
 
 const fraunces = Fraunces({ subsets: ["latin"], weight: ["500", "600"] })
 
@@ -20,10 +20,9 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-[oklch(0.9_0.01_75)] bg-[oklch(0.998_0.004_83)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-[oklch(0.22_0.012_60)]/15 hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.35)]">
       <div className="relative aspect-square w-full overflow-hidden bg-[oklch(0.95_0.008_83)]">
-        <Image
+        <SafeImage
           src={product.thumbnail}
           alt={product.title}
-          fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
