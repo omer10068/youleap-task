@@ -1,9 +1,11 @@
 # Decisions
 
-This file is a running log, updated as the project progresses. This first entry covers
-only the domain-foundation phase: `src/types/cart.ts`, `src/lib/variant-utils.ts`, and
-`src/lib/cart-context.tsx`. No UI exists yet and the cart provider is not wired into
-`layout.tsx`.
+This file is a running log, updated as the project progresses.
+
+## Phase 1 — Domain foundation
+
+Covers `src/types/cart.ts`, `src/lib/variant-utils.ts`, and `src/lib/cart-context.tsx`.
+No UI existed yet and the cart provider was not wired into `layout.tsx`.
 
 ## Cart snapshot model
 
@@ -106,3 +108,78 @@ typecheck` and `pnpm lint` are clean on all three new files (no `any`).
   parser over the full dataset rather than a handful of examples. Fixed by taking only
   the first `options.length` segments and ignoring extra trailing ones; still fails
   safe if a title has *fewer* segments than declared options.
+
+## Phase 2 — App shell & typed products foundation
+
+Wires the cart provider into the app, adds a minimal header, and converts `/products`
+to a typed Server Component fetch. Still no Quick View modal, cart drawer,
+search/filter, pagination, checkout, or `localStorage`.
+
+### `/products` is now a Server Component
+
+`src/app/products/page.tsx` is an `async` Server Component that fetches
+`GET /api/products` directly (no `mock-data` import, no query params yet) and renders
+`<ProductGrid products={data.products} />`. Doing this now rather than in the
+search/filter phase avoids typing the old client `useEffect` fetch just to throw it
+away next phase — the fetch shape doesn't change when `searchParams` support is added
+later, only what's passed as query params.
+
+### Base URL strategy for server-side fetches
+
+A Server Component `fetch` needs an absolute URL — there's no implicit host like in a
+browser `fetch("/api/products")`. `src/lib/get-base-url.ts` derives the origin from the
+incoming request's `host`/`x-forwarded-host` and protocol headers via `next/headers`'s
+`headers()` (async in this Next version, consistent with the async `params` pattern
+already used in `src/app/api/products/[id]/route.ts`). This avoids hardcoding
+`http://localhost:3000`, so it works unmodified in dev and in any deployment without
+extra env configuration. Deliberately not bypassed by importing `mock-data/` directly
+in the page — the README specifies fetching from `GET /api/products`, and skipping the
+HTTP layer for SSR would mean never actually exercising that API route from the app.
+
+### The Server → Client event handler boundary
+
+`onQuickView` is a function, and functions aren't serializable across the Server → Client
+boundary — a Server Component can't pass one as a prop to a Client Component. `/products/page.tsx`
+stays a Server Component and passes only plain, serializable `products: Product[]` down
+to a new `src/components/ProductGrid.tsx`, which is `"use client"` and owns the Quick
+View click handler itself (currently just `console.log`s the clicked product; Phase 3
+replaces that body with opening the modal). `ProductCard` also stays a client component
+— it needs an `onClick` handler regardless of where its state lives, so there's no
+Server/Client split to make inside the card itself.
+
+### `Header` as a Client Component
+
+`Header` calls `useCart()` to render the item count, which forces it to be
+`"use client"` — there's no way around this short of splitting out a separate tiny
+client-only "cart badge," which isn't worth it for a component this small. The cart
+icon/count is deliberately **not** a clickable link yet: there's no drawer to open, and
+making it look actionable when it does nothing would be a misleading affordance. It
+becomes interactive in the cart-drawer phase.
+
+### `CartProvider` wired now, `localStorage` still deferred
+
+The provider is mounted in `layout.tsx` now because `Header` requires it structurally.
+That's a different question from whether to add persistence, though: there is still no
+real Add-to-Cart flow to populate the cart, reload, and confirm state survives, so
+`localStorage` would be shipped unverified against actual usage. It's deferred again,
+to whichever phase adds Add to Cart. This also avoids an SSR/hydration-mismatch risk
+for free right now: with no persistence, `CartProvider`'s initial state (`{items: []}`)
+is identical on server and client, so there's nothing to reconcile after hydration.
+Adding persistence introduces that mismatch risk and needs explicit handling for it —
+better taken on once there's a real flow to test it against.
+
+### Verification for this phase
+
+Typecheck and lint are clean across the whole repo (not just the new/changed files —
+the pre-existing `any`/`no-img-element` warnings on the old `ProductCard` and
+`products/page.tsx` are gone now that both were rewritten). Verified against the
+project's own running dev server rather than only static analysis: `GET /products`
+returns 200 with real SSR product data, exactly 12 `Quick View` buttons (matching the
+API's default `limit=12`), prices correctly formatted with the `₪` symbol via
+`Intl.NumberFormat` and each variant's real `currency_code`, `next/image` genuinely
+optimizing thumbnails through `/_next/image` (confirming the `picsum.photos`
+`remotePatterns` entry in `next.config.mjs` wasn't dead configuration), and real `alt`
+text present per product. Not verified: an actual browser click on "Quick View" (no
+browser-automation tool available in this environment) — the handler wiring is a single
+`onClick={() => onQuickView(product)}` line, so this is a low-risk gap, not a deferred
+one.
