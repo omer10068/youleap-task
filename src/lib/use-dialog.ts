@@ -41,6 +41,23 @@ export function useDialog<T extends HTMLElement>(onClose: () => void) {
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
 
+      // Focus can land on an element inside the dialog that isn't itself a
+      // tab stop (e.g. a heading with tabIndex={-1}, focused programmatically
+      // to announce a view change). Browsers resolve Tab/Shift+Tab from such
+      // an element using raw DOM order, which can walk straight out of the
+      // dialog if nothing focusable happens to sit before/after it in the
+      // markup. Redirecting explicitly here keeps the trap correct regardless
+      // of where in the dialog focus currently sits.
+      if (!focusable.includes(document.activeElement as HTMLElement)) {
+        event.preventDefault()
+        if (event.shiftKey) {
+          last.focus()
+        } else {
+          first.focus()
+        }
+        return
+      }
+
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
         last.focus()
