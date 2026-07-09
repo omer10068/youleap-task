@@ -45,7 +45,7 @@ export default function ProductPagination({ page, totalPages }: ProductPaginatio
           type="button"
           onClick={() => goToPage(page - 1)}
           disabled={!hasPrev}
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-stone-300 bg-white px-5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-stone-300 disabled:hover:text-stone-700"
+          className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-[oklch(0.9_0.01_75)] bg-[oklch(0.998_0.004_83)] px-5 text-sm font-medium text-stone-700 transition-colors hover:border-[oklch(0.22_0.012_60)]/25 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-stone-300 disabled:hover:text-stone-700"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Previous
@@ -60,7 +60,7 @@ export default function ProductPagination({ page, totalPages }: ProductPaginatio
           type="button"
           onClick={() => goToPage(page + 1)}
           disabled={!hasNext}
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-stone-300 bg-white px-5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-stone-300 disabled:hover:text-stone-700"
+          className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-[oklch(0.9_0.01_75)] bg-[oklch(0.998_0.004_83)] px-5 text-sm font-medium text-stone-700 transition-colors hover:border-[oklch(0.22_0.012_60)]/25 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-stone-300 disabled:hover:text-stone-700"
         >
           Next
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -79,7 +79,7 @@ export default function ProductPagination({ page, totalPages }: ProductPaginatio
           type="button"
           onClick={() => goToPage(page + 1)}
           disabled={!hasNext}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-stone-900 px-5 text-sm font-medium text-white transition-colors hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300"
+          className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[oklch(0.26_0.014_55)] px-5 text-sm font-medium text-[oklch(0.98_0.006_83)] transition-colors hover:bg-[oklch(0.62_0.11_45)] hover:text-[oklch(0.99_0.006_83)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(0.62_0.11_45)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-stone-300"
         >
           Next products
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -88,7 +88,7 @@ export default function ProductPagination({ page, totalPages }: ProductPaginatio
           type="button"
           onClick={() => goToPage(page - 1)}
           disabled={!hasPrev}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-5 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-[oklch(0.9_0.01_75)] bg-[oklch(0.998_0.004_83)] px-5 text-sm font-medium text-stone-700 transition-colors hover:border-[oklch(0.22_0.012_60)]/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Previous products

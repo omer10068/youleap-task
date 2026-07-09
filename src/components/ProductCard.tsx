@@ -27,6 +27,11 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
+        {product.tags[0] && (
+          <span className="absolute top-3 left-3 rounded-full bg-[oklch(0.985_0.006_83)]/90 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[oklch(0.22_0.012_60)] uppercase shadow-sm backdrop-blur">
+            {product.tags[0].value}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         <div className="flex flex-1 flex-col gap-1">
@@ -47,7 +52,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
           // reliably the trigger. This lets the modal return focus here
           // precisely, regardless of that browser quirk.
           onClick={(event) => onQuickView(product, event.currentTarget)}
-          className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[oklch(0.26_0.014_55)] px-4 text-sm font-medium text-[oklch(0.98_0.006_83)] transition-colors hover:bg-[oklch(0.62_0.11_45)] hover:text-[oklch(0.99_0.006_83)] focus-visible:ring-2 focus-visible:ring-[oklch(0.62_0.11_45)] focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-[oklch(0.26_0.014_55)] px-4 text-sm font-medium text-[oklch(0.98_0.006_83)] transition-colors hover:bg-[oklch(0.62_0.11_45)] hover:text-[oklch(0.99_0.006_83)] focus-visible:ring-2 focus-visible:ring-[oklch(0.62_0.11_45)] focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           Quick View
         </button>
