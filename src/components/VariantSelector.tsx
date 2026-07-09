@@ -40,9 +40,9 @@ export default function VariantSelector({ product, selection, onSelect }: Varian
                     aria-label={`${option.title}: ${value}${isAvailable ? "" : " (unavailable)"}`}
                     className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 ${
                       isSelected
-                        ? "border-stone-900 bg-stone-900 text-white"
+                        ? "cursor-pointer border-stone-900 bg-stone-900 text-white"
                         : isAvailable
-                          ? "border-stone-300 bg-white text-stone-700 hover:border-stone-900/40 hover:bg-stone-50"
+                          ? "cursor-pointer border-stone-300 bg-white text-stone-700 hover:border-stone-900/40 hover:bg-stone-50"
                           : "cursor-not-allowed border-dashed border-stone-300 bg-transparent text-stone-300 line-through hover:border-stone-300 hover:bg-transparent"
                     }`}
                   >

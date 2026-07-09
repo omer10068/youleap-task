@@ -114,7 +114,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
           type="button"
           onClick={onClose}
           aria-label="Close Quick View"
-          className="absolute top-4 right-4 z-10 hidden h-9 w-9 items-center justify-center rounded-full border border-[oklch(0.9_0.01_75)] bg-white/85 text-stone-700 backdrop-blur transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none sm:inline-flex"
+          className="absolute top-4 right-4 z-10 hidden h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[oklch(0.9_0.01_75)] bg-white/85 text-stone-700 backdrop-blur transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none sm:inline-flex"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -142,7 +142,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                     type="button"
                     onClick={() => goToImage(selectedImageIndex - 1)}
                     aria-label="Previous image"
-                    className="absolute top-1/2 left-3 grid size-7 aspect-square shrink-0 -translate-y-1/2 place-items-center rounded-full bg-white/35 text-stone-600 backdrop-blur-sm transition-colors hover:bg-white/70 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className="absolute top-1/2 left-3 grid size-7 aspect-square shrink-0 cursor-pointer -translate-y-1/2 place-items-center rounded-full bg-white/35 text-stone-600 backdrop-blur-sm transition-colors hover:bg-white/70 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
                   >
                     <ChevronLeft size={14} strokeWidth={2.5} aria-hidden="true" />
                   </button>
@@ -150,7 +150,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                     type="button"
                     onClick={() => goToImage(selectedImageIndex + 1)}
                     aria-label="Next image"
-                    className="absolute top-1/2 right-3 grid size-7 aspect-square shrink-0 -translate-y-1/2 place-items-center rounded-full bg-white/35 text-stone-600 backdrop-blur-sm transition-colors hover:bg-white/70 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className="absolute top-1/2 right-3 grid size-7 aspect-square shrink-0 cursor-pointer -translate-y-1/2 place-items-center rounded-full bg-white/35 text-stone-600 backdrop-blur-sm transition-colors hover:bg-white/70 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
                   >
                     <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />
                   </button>
@@ -177,7 +177,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                     onClick={() => goToImage(index)}
                     aria-label={`View image ${index + 1} of ${gallery.length}`}
                     aria-current={index === selectedImageIndex}
-                    className={`relative h-16 w-16 overflow-hidden rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                    className={`relative h-16 w-16 cursor-pointer overflow-hidden rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
                       index === selectedImageIndex
                         ? "border-stone-900"
                         : "border-[oklch(0.9_0.01_75)] hover:border-stone-400"
@@ -228,7 +228,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                 aria-live="polite"
                 className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
                   canAddToCart
-                    ? "bg-stone-900 text-white hover:bg-stone-700"
+                    ? "cursor-pointer bg-stone-900 text-white hover:bg-stone-700"
                     : "cursor-not-allowed bg-stone-200 text-stone-400"
                 }`}
               >
