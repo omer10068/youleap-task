@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Search, X, ChevronDown } from "lucide-react"
 import type { ProductCollection } from "@/types/product"
 import type { ProductQueryParams } from "@/lib/query-params"
 
@@ -11,15 +12,9 @@ type ProductFiltersProps = {
   collections: ProductCollection[]
   tags: string[]
   current: ProductQueryParams
-  totalPages: number
 }
 
-export default function ProductFilters({
-  collections,
-  tags,
-  current,
-  totalPages,
-}: ProductFiltersProps) {
+export default function ProductFilters({ collections, tags, current }: ProductFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -44,23 +39,6 @@ export default function ProductFilters({
     [searchParams, pathname, router]
   )
 
-  // Pagination uses push (not replace) so browser Back returns to the
-  // previous page, per the agreed tradeoff for this control specifically.
-  const goToPage = useCallback(
-    (page: number) => {
-      const params = new URLSearchParams(searchParams.toString())
-
-      if (page <= 1) {
-        params.delete("page")
-      } else {
-        params.set("page", String(page))
-      }
-
-      router.push(`${pathname}?${params.toString()}`)
-    },
-    [searchParams, pathname, router]
-  )
-
   useEffect(() => {
     if (searchValue === (current.q ?? "")) return
 
@@ -79,61 +57,63 @@ export default function ProductFilters({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="relative">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-stone-400"
+            aria-hidden="true"
+          />
           <input
             type="search"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Search products..."
             aria-label="Search products"
-            className="w-64 rounded-md border px-3 py-2 text-sm"
+            className="h-12 w-full rounded-full border border-stone-300 bg-white pl-11 pr-11 text-sm text-stone-900 shadow-sm outline-none transition-colors placeholder:text-stone-400 focus-visible:border-stone-500 focus-visible:ring-2 focus-visible:ring-stone-900/10"
           />
           {searchValue && (
             <button
               type="button"
               onClick={() => setSearchValue("")}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20"
             >
-              ×
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           )}
         </div>
 
-        <select
-          value={current.tag ?? ""}
-          onChange={(e) => updateFilters({ tag: e.target.value || undefined })}
-          aria-label="Filter by tag"
-          className="rounded-md border px-3 py-2 text-sm"
-        >
-          <option value="">All tags</option>
-          {tags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
-
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="text-sm text-gray-600 underline hover:text-black"
+        <div className="relative sm:w-56">
+          <select
+            value={current.tag ?? ""}
+            onChange={(e) => updateFilters({ tag: e.target.value || undefined })}
+            aria-label="Filter by tag"
+            className="h-12 w-full appearance-none rounded-full border border-stone-300 bg-white pl-4 pr-10 text-sm text-stone-900 shadow-sm outline-none transition-colors focus-visible:border-stone-500 focus-visible:ring-2 focus-visible:ring-stone-900/10"
           >
-            Clear all filters
-          </button>
-        )}
+            <option value="">All tags</option>
+            {tags.map((tag) => (
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => updateFilters({ collection: undefined })}
           aria-pressed={!current.collection}
-          className={`rounded-full border px-3 py-1 text-sm ${
-            !current.collection ? "bg-black text-white" : "bg-white text-gray-700"
+          className={`inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 ${
+            !current.collection
+              ? "border-stone-900 bg-stone-900 text-white"
+              : "border-stone-300 bg-white text-stone-700 hover:border-stone-400"
           }`}
         >
           All
@@ -144,37 +124,26 @@ export default function ProductFilters({
             type="button"
             onClick={() => updateFilters({ collection: collection.handle })}
             aria-pressed={current.collection === collection.handle}
-            className={`rounded-full border px-3 py-1 text-sm ${
+            className={`inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 ${
               current.collection === collection.handle
-                ? "bg-black text-white"
-                : "bg-white text-gray-700"
+                ? "border-stone-900 bg-stone-900 text-white"
+                : "border-stone-300 bg-white text-stone-700 hover:border-stone-400"
             }`}
           >
             {collection.title}
           </button>
         ))}
-      </div>
 
-      <div className="flex items-center justify-between border-t pt-4">
-        <button
-          type="button"
-          onClick={() => goToPage(current.page - 1)}
-          disabled={current.page <= 1}
-          className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-40"
-        >
-          Prev
-        </button>
-        <span className="text-sm text-gray-600">
-          Page {current.page} of {totalPages}
-        </span>
-        <button
-          type="button"
-          onClick={() => goToPage(current.page + 1)}
-          disabled={current.page >= totalPages}
-          className="rounded-md border px-3 py-1.5 text-sm disabled:opacity-40"
-        >
-          Next
-        </button>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
+            Clear filters
+          </button>
+        )}
       </div>
     </div>
   )

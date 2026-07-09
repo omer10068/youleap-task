@@ -1,3 +1,4 @@
+import { Fraunces } from "next/font/google"
 import { getBaseUrl } from "@/lib/get-base-url"
 import {
   PRODUCTS_PAGE_SIZE,
@@ -6,7 +7,10 @@ import {
 } from "@/lib/query-params"
 import ProductFilters from "@/components/ProductFilters"
 import ProductGrid from "@/components/ProductGrid"
+import ProductPagination from "@/components/ProductPagination"
 import type { Product, ProductCollection, ProductsResponse } from "@/types/product"
+
+const fraunces = Fraunces({ subsets: ["latin"], weight: ["600"] })
 
 type ProductsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -62,21 +66,43 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const hasActiveFilters = Boolean(parsed.q || parsed.collection || parsed.tag)
 
   return (
-    <main className="max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Products</h1>
-      <ProductFilters
-        collections={collections}
-        tags={tags}
-        current={parsed}
-        totalPages={totalPages}
-      />
-      <div className="mt-6">
+    <main className="min-h-screen bg-[oklch(0.985_0.006_83)]">
+      <div className="mx-auto max-w-7xl px-4 pt-10 pb-20 sm:px-6 sm:pt-14 lg:px-8">
+        <section className="border-b border-[oklch(0.9_0.01_75)] pb-10 sm:pb-14">
+          <p className="text-xs font-medium tracking-[0.22em] text-[oklch(0.62_0.11_45)] uppercase">
+            The Collection
+          </p>
+          <h1
+            className={`${fraunces.className} mt-3 text-4xl font-semibold text-balance tracking-tight text-stone-900 sm:text-5xl`}
+          >
+            Premium everyday essentials
+          </h1>
+          <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-stone-500">
+            Thoughtfully designed products for work, home, and life — crafted from
+            considered materials and built to last. Explore the pieces our community
+            loves most.
+          </p>
+        </section>
+
+        <section className="py-8">
+          <ProductFilters collections={collections} tags={tags} current={parsed} />
+        </section>
+
+        <div className="flex items-center justify-between pb-5">
+          <p className="text-sm text-stone-500">
+            <span className="font-semibold text-stone-900">{gridData.count}</span>{" "}
+            {gridData.count === 1 ? "product" : "products"}
+          </p>
+        </div>
+
         <ProductGrid
           products={gridData.products}
           emptyMessage={
             hasActiveFilters ? "No products match your filters." : "No products found."
           }
         />
+
+        <ProductPagination page={parsed.page} totalPages={totalPages} />
       </div>
     </main>
   )
