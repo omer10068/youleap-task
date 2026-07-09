@@ -3,9 +3,11 @@
 import { useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
+import { Check, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useCart } from "@/lib/cart-context"
 import { useDialog } from "@/lib/use-dialog"
+import { formatPrice } from "@/lib/format-price"
 import {
   findMatchingVariant,
   getVariantOptionValues,
@@ -35,6 +37,22 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
     getVariantOptionValues(product, initialVariant)
   )
   const [justAdded, setJustAdded] = useState(false)
+
+  // No product-change reset effect needed: ProductGrid conditionally
+  // mounts/unmounts this component per product (never reuses one instance
+  // across products), so useState's initial value is already correct on
+  // every fresh open.
+  const gallery = useMemo(
+    () => (product.images.length > 0 ? product.images.map((image) => image.url) : [product.thumbnail]),
+    [product]
+  )
+  const hasMultipleImages = gallery.length > 1
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+
+  function goToImage(index: number) {
+    const count = gallery.length
+    setSelectedImageIndex(((index % count) + count) % count)
+  }
 
   const matchedVariant = findMatchingVariant(product, selection)
   const inStock = matchedVariant ? isVariantInStock(matchedVariant) : false
@@ -68,15 +86,12 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   }
 
   const formattedPrice = matchedVariant
-    ? new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: matchedVariant.prices[0].currency_code,
-      }).format(matchedVariant.prices[0].amount / 100)
+    ? formatPrice(matchedVariant.prices[0].amount, matchedVariant.prices[0].currency_code)
     : null
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/50 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={handleBackdropClick}
     >
       <div
@@ -85,74 +100,171 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
         aria-modal="true"
         aria-labelledby="quick-view-title"
         aria-describedby="quick-view-description"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
+        className="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-[oklch(0.9_0.01_75)] bg-white shadow-[0_40px_80px_-32px_rgba(0,0,0,0.35)] sm:max-h-[88vh] sm:max-w-4xl sm:rounded-3xl"
       >
-        <div className="flex items-start justify-between gap-4">
-          <h2 id="quick-view-title" className="text-xl font-bold">
-            {product.title}
-          </h2>
-          <button
-            ref={initialFocusRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Close Quick View"
-            className="shrink-0 rounded-md border px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            ✕
-          </button>
+        {/* Mobile grabber — decorative sheet styling cue. No visible close
+            button: Escape and backdrop-click remain the close paths. */}
+        <div className="flex shrink-0 justify-center bg-[oklch(0.95_0.008_83)] py-3 sm:hidden">
+          <span className="h-1.5 w-10 rounded-full bg-[oklch(0.9_0.01_75)]" aria-hidden="true" />
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div className="flex gap-2 overflow-x-auto sm:flex-col">
-            {product.images.map((image, index) => (
-              <div key={image.url} className="relative h-40 w-40 shrink-0 sm:h-48 sm:w-full">
-                <Image
-                  src={image.url}
-                  alt={`${product.title} image ${index + 1}`}
-                  fill
-                  sizes="200px"
-                  className="rounded-md object-cover"
-                />
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto sm:grid-cols-2">
+          {/* Gallery */}
+          <div className="flex flex-col gap-3 bg-[oklch(0.95_0.008_83)] p-4 sm:p-6">
+            <div className="relative aspect-square overflow-hidden rounded-2xl border border-[oklch(0.9_0.01_75)]/60 bg-white">
+              <Image
+                src={gallery[selectedImageIndex]}
+                alt={
+                  hasMultipleImages
+                    ? `${product.title} — image ${selectedImageIndex + 1} of ${gallery.length}`
+                    : product.title
+                }
+                fill
+                sizes="(max-width: 640px) 100vw, 40vw"
+                className="object-cover"
+                priority
+              />
+
+              {hasMultipleImages && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => goToImage(selectedImageIndex - 1)}
+                    aria-label="Previous image"
+                    className="absolute top-1/2 left-3 grid size-7 aspect-square shrink-0 -translate-y-1/2 place-items-center rounded-full bg-white/35 text-stone-600 backdrop-blur-sm transition-colors hover:bg-white/70 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  >
+                    <ChevronLeft size={14} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => goToImage(selectedImageIndex + 1)}
+                    aria-label="Next image"
+                    className="absolute top-1/2 right-3 grid size-7 aspect-square shrink-0 -translate-y-1/2 place-items-center rounded-full bg-white/35 text-stone-600 backdrop-blur-sm transition-colors hover:bg-white/70 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  >
+                    <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                  <span
+                    className="absolute right-3 bottom-3 rounded-full bg-stone-900/70 px-2.5 py-1 text-xs font-medium text-white tabular-nums backdrop-blur"
+                    aria-live="polite"
+                  >
+                    {selectedImageIndex + 1} / {gallery.length}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {hasMultipleImages && (
+              <div
+                className="flex gap-2"
+                role="group"
+                aria-label={`Product images, ${gallery.length} total`}
+              >
+                {gallery.map((src, index) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => goToImage(index)}
+                    aria-label={`View image ${index + 1} of ${gallery.length}`}
+                    aria-current={index === selectedImageIndex}
+                    className={`relative h-16 w-16 overflow-hidden rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                      index === selectedImageIndex
+                        ? "border-stone-900"
+                        : "border-[oklch(0.9_0.01_75)] hover:border-stone-400"
+                    }`}
+                  >
+                    <Image src={src} alt="" fill sizes="64px" className="object-cover" />
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
           </div>
 
-          <div>
-            <p id="quick-view-description" className="text-sm text-gray-600">
-              {product.description}
-            </p>
-
-            <div className="mt-4">
-              <VariantSelector product={product} selection={selection} onSelect={handleSelect} />
+          {/* Details */}
+          <div className="flex flex-col gap-6 p-6 sm:p-8">
+            <div className="space-y-3">
+              <p className="text-[11px] font-medium tracking-[0.18em] text-[oklch(0.62_0.11_45)] uppercase">
+                {product.collection.title}
+              </p>
+              <h2
+                id="quick-view-title"
+                className="text-balance text-2xl leading-tight font-semibold text-stone-900 sm:text-3xl"
+              >
+                {product.title}
+              </h2>
+              <p
+                id="quick-view-description"
+                className="text-pretty text-sm leading-relaxed text-stone-500"
+              >
+                {product.description}
+              </p>
             </div>
 
-            <div className="mt-4 space-y-1">
-              <p className="text-lg font-semibold">
-                {formattedPrice ?? "Select a valid combination"}
-              </p>
-              <p className="text-sm">
-                {!matchedVariant ? (
-                  <span className="text-gray-500">This combination isn&apos;t available.</span>
-                ) : inStock ? (
-                  <span className="text-green-600">In stock</span>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-semibold text-stone-900">
+                {formattedPrice ?? "—"}
+              </span>
+              <StockPill isMissing={!matchedVariant} inStock={inStock} />
+            </div>
+
+            <VariantSelector product={product} selection={selection} onSelect={handleSelect} />
+
+            <div className="mt-auto pt-2">
+              <button
+                ref={initialFocusRef}
+                type="button"
+                onClick={handleAddToCart}
+                disabled={!canAddToCart}
+                aria-live="polite"
+                className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-6 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  canAddToCart
+                    ? "bg-stone-900 text-white hover:bg-stone-700"
+                    : "cursor-not-allowed bg-stone-200 text-stone-400"
+                }`}
+              >
+                {justAdded ? (
+                  <>
+                    <Check className="h-4 w-4" aria-hidden="true" />
+                    Added!
+                  </>
                 ) : (
-                  <span className="text-red-600">Out of stock</span>
+                  <>
+                    <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+                    {!matchedVariant ? "Unavailable" : !inStock ? "Out of stock" : "Add to Cart"}
+                  </>
                 )}
-              </p>
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={!canAddToCart}
-              className="mt-4 w-full rounded-md bg-black py-2 text-sm text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-            >
-              {justAdded ? "Added!" : "Add to Cart"}
-            </button>
           </div>
         </div>
       </div>
     </div>,
     document.body
+  )
+}
+
+function StockPill({ isMissing, inStock }: { isMissing: boolean; inStock: boolean }) {
+  if (isMissing) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-stone-100 px-3 py-1 text-xs font-medium text-stone-500">
+        <span className="h-1.5 w-1.5 rounded-full bg-stone-400" aria-hidden="true" />
+        Unavailable
+      </span>
+    )
+  }
+
+  if (!inStock) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
+        <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />
+        Out of stock
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[oklch(0.62_0.11_45)]/30 bg-[oklch(0.62_0.11_45)]/10 px-3 py-1 text-xs font-medium text-[oklch(0.62_0.11_45)]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[oklch(0.62_0.11_45)]" aria-hidden="true" />
+      In stock
+    </span>
   )
 }

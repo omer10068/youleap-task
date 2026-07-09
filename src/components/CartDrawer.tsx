@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-context"
 import { useDialog } from "@/lib/use-dialog"
+import { formatPrice } from "@/lib/format-price"
 import CartLineItem from "@/components/CartLineItem"
 import CheckoutForm from "@/components/CheckoutForm"
 import CheckoutSuccess from "@/components/CheckoutSuccess"
@@ -24,13 +25,6 @@ const viewTitles: Record<DrawerView, string> = {
   cart: "Cart",
   checkout: "Checkout",
   success: "Order Confirmed",
-}
-
-function formatTotal(amount: number, currencyCode: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currencyCode,
-  }).format(amount / 100)
 }
 
 export default function CartDrawer({ onClose }: CartDrawerProps) {
@@ -64,7 +58,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
 
   const total = state.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   const currencyCode = state.items[0]?.currencyCode ?? "ILS"
-  const formattedTotal = formatTotal(total, currencyCode)
+  const formattedTotal = formatPrice(total, currencyCode)
 
   function handleCheckoutSuccess() {
     const itemCount = state.items.reduce((sum, item) => sum + item.quantity, 0)

@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import type { CartItem } from "@/types/cart"
+import { formatPrice } from "@/lib/format-price"
 
 type CartLineItemProps = {
   item: CartItem
@@ -16,11 +17,7 @@ export default function CartLineItem({
   onDecrement,
   onRemove,
 }: CartLineItemProps) {
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: item.currencyCode,
-    }).format(amount / 100)
+  const formatAmount = (amount: number) => formatPrice(amount, item.currencyCode)
 
   return (
     <li className="flex gap-3 py-4">

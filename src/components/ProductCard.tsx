@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Fraunces } from "next/font/google"
 import type { Product } from "@/types/product"
 import { getStartingPrice } from "@/lib/variant-utils"
+import { formatPrice } from "@/lib/format-price"
 
 const fraunces = Fraunces({ subsets: ["latin"], weight: ["500", "600"] })
 
@@ -14,10 +15,7 @@ type ProductCardProps = {
 
 export default function ProductCard({ product, onQuickView }: ProductCardProps) {
   const startingPrice = getStartingPrice(product)
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: startingPrice.currency_code,
-  }).format(startingPrice.amount / 100)
+  const formattedPrice = formatPrice(startingPrice.amount, startingPrice.currency_code)
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-[oklch(0.9_0.01_75)] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.25)]">
