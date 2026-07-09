@@ -636,3 +636,67 @@ correctly with the new drawer code loaded. Not verified: real browser interactio
 the checkout form (typing, submit, focus landing on the right element, Back/Continue
 Shopping clicks) — no browser-automation tool is available in this environment, the
 same limitation noted in every prior phase's UI verification.
+
+## Phase 7 — Final review fixes
+
+A self-review pass, done as if evaluating this submission cold, found one real bug and
+one gap against the README's own required `DECISIONS.md` structure. Both fixed here;
+nothing else changed.
+
+### Focus-trap leak in `CartDrawer`'s success view
+
+`useDialog`'s Tab-cycle only intercepted Tab/Shift+Tab when `document.activeElement`
+was exactly the first or last element in its tracked `focusable` list. When
+`CartDrawer` moves focus to its header `<h2>` (`tabIndex={-1}`, used to announce a view
+change to screen readers) on entering the `checkout` or `success` view, that heading is
+deliberately excluded from `focusable` — it's not meant to be a normal tab stop. In the
+`checkout` view this was accidentally harmless, because a Back button happens to render
+immediately before the heading in DOM order, so the browser's native Shift+Tab still
+landed inside the dialog. In the `success` view there's no Back button, so Shift+Tab
+from the heading walked straight out of the portal into the underlying page. Fixed by
+checking whether `document.activeElement` is in `focusable` at all before the
+first/last comparison; if it isn't, Tab now moves to the first focusable element and
+Shift+Tab to the last, both with `preventDefault()`. This also makes the `checkout`
+view's behavior more consistent as a side effect — Shift+Tab from its heading now
+wraps to the true last element (e.g. "Place Order") instead of landing on the Back
+button, which happened to work before but only by accident of markup order. `useDialog`
+stayed the same size and shape — no new option, no new file, no generic frame
+extracted.
+
+## Tradeoffs
+
+What would change with more time, honestly assessed:
+
+- **No browser automation.** Every phase's UI logic was verified through
+  `pnpm typecheck`/`lint`/`build`, disposable scripts run against the real compiled
+  code and real `mock-data/products.json` (never hand-picked fixtures), and live
+  checks against the running dev server — but nothing here clicked a real button in a
+  real browser. The focus-trap bug this phase fixes is a direct consequence: it was
+  found by re-reading the code and reasoning through DOM/focus semantics during a
+  review pass, not caught by any of the verification that ran during the phase that
+  introduced it. A Playwright (or similar) smoke suite covering the two dialogs'
+  keyboard paths would have caught it immediately, and is the single highest-value
+  thing missing from this project's testing story.
+- **`/product/[id]` is still the original starter stub.** A standalone product detail
+  page was never part of the README's core requirements — Quick View covers product
+  detail viewing — so it was deliberately left untouched rather than built out or
+  removed.
+- **Quick View reuses grid data instead of refetching by id.** The grid already holds
+  the full `Product` shape, so a refetch would return identical data at the cost of
+  the mock API's artificial latency. This only stops being the right call if Quick
+  View ever needs to be deep-linkable (opened via URL without the grid having been
+  fetched first), which wasn't in scope.
+- **No quantity stepper in Quick View.** Add to Cart always adds exactly 1; quantity
+  adjustment lives entirely in the cart drawer, which already has `UPDATE_QUANTITY`
+  wired up. Fine for this scope, but a stepper in Quick View would be a reasonable
+  addition if the product ever needed "buy 3 of this right now" as a fast path.
+- **Checkout is a client-side success flow only.** No backend submission, no payment
+  fields, no order persistence or order ID — deliberately, per the README's own "no
+  real backend needed" instruction. A real implementation would need all of the above
+  plus idempotency handling for double-submits.
+- **Price formatting (`Intl.NumberFormat` currency call) is duplicated in four
+  places** (`ProductCard`, `QuickViewModal`, `CartLineItem`, `CartDrawer`). Each
+  individual phase had a defensible reason not to extract it at the time (respecting
+  that phase's exact approved file scope), but across the whole project this is now a
+  real, findable DRY violation. A small `formatPrice(amount, currencyCode)` helper
+  would be a reasonable five-minute cleanup with more time.
