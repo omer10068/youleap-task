@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
-import { Check, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, ShoppingBag, X } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useCart } from "@/lib/cart-context"
 import { useDialog } from "@/lib/use-dialog"
@@ -102,11 +102,22 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
         aria-describedby="quick-view-description"
         className="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-[oklch(0.9_0.01_75)] bg-white shadow-[0_40px_80px_-32px_rgba(0,0,0,0.35)] sm:max-h-[88vh] sm:max-w-4xl sm:rounded-3xl"
       >
-        {/* Mobile grabber — decorative sheet styling cue. No visible close
-            button: Escape and backdrop-click remain the close paths. */}
+        {/* Mobile grabber — decorative sheet styling cue. The close button
+            below is desktop-only (Escape/backdrop-click cover mobile), so
+            initialFocusRef stays on Add to Cart rather than this button —
+            a hidden (display:none) element can't receive focus on mobile. */}
         <div className="flex shrink-0 justify-center bg-[oklch(0.95_0.008_83)] py-3 sm:hidden">
           <span className="h-1.5 w-10 rounded-full bg-[oklch(0.9_0.01_75)]" aria-hidden="true" />
         </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close Quick View"
+          className="absolute top-4 right-4 z-10 hidden h-9 w-9 items-center justify-center rounded-full border border-[oklch(0.9_0.01_75)] bg-white/85 text-stone-700 backdrop-blur transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none sm:inline-flex"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto sm:grid-cols-2">
           {/* Gallery */}
