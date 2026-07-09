@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import type { Product } from "@/types/product"
 import { useCart } from "@/lib/cart-context"
+import { useDialog } from "@/lib/use-dialog"
 import {
   findMatchingVariant,
   getVariantOptionValues,
@@ -19,18 +20,10 @@ type QuickViewModalProps = {
 
 const ADDED_CONFIRMATION_MS = 1500
 
-function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )
-  )
-}
-
 export default function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const { dispatch } = useCart()
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const { containerRef, initialFocusRef, handleBackdropClick } =
+    useDialog<HTMLDivElement>(onClose)
 
   // Prefer the first in-stock variant so the modal opens with a real,
   // purchasable selection rather than an empty one the user must resolve.
@@ -46,46 +39,6 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   const matchedVariant = findMatchingVariant(product, selection)
   const inStock = matchedVariant ? isVariantInStock(matchedVariant) : false
   const canAddToCart = Boolean(matchedVariant) && inStock
-
-  useEffect(() => {
-    closeButtonRef.current?.focus()
-  }, [])
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [])
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose()
-        return
-      }
-
-      if (event.key !== "Tab" || !dialogRef.current) return
-
-      const focusable = getFocusableElements(dialogRef.current)
-      if (focusable.length === 0) return
-
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [onClose])
 
   function handleSelect(optionId: string, value: string) {
     setSelection((prev) => ({ ...prev, [optionId]: value }))
@@ -124,12 +77,10 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
+      onClick={handleBackdropClick}
     >
       <div
-        ref={dialogRef}
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="quick-view-title"
@@ -141,7 +92,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
             {product.title}
           </h2>
           <button
-            ref={closeButtonRef}
+            ref={initialFocusRef}
             type="button"
             onClick={onClose}
             aria-label="Close Quick View"
