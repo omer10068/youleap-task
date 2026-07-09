@@ -528,3 +528,111 @@ to confirm the increment/decrement/remove paths and the cart total
 Not verified: real browser interaction with the drawer (open/close/focus-return/Tab
 cycle) — no browser-automation tool is available in this environment, same limitation
 noted in every prior phase's UI verification.
+
+## Phase 6 — Checkout
+
+Adds checkout as a third view inside the existing `CartDrawer`. This is the last cart
+phase — the take-home's core requirements are now all covered.
+
+### Checkout is a view swap inside the same dialog, not a new page or a second modal
+
+`CartDrawer` now tracks `view: "cart" | "checkout" | "success"` and swaps its body
+content accordingly, while the single `role="dialog"` container from `useDialog`
+(portal, focus trap, Escape, guarded backdrop-click, scroll lock) stays exactly as it
+was — nothing about the dialog mechanics needed to change to support this. The
+alternative that was actually risky — a second dialog opened from within the first for
+checkout — would have meant coordinating two focus traps and two Escape/backdrop
+handlers; a separate `/checkout` page would have meant deciding what happens to the
+drawer's open state across a navigation. Neither problem exists here, because there's
+only ever one dialog instance across the whole cart → checkout → success flow.
+
+### `zod`, not hand-rolled validation
+
+`zod` has been an installed, unused dependency since the project scaffold — this is
+its first real use. `checkoutSchema` validates six fields (full name, email, phone
+[optional], street address, city, postal code) with `.trim()` applied before length
+checks (so whitespace-only input correctly fails, verified directly — see below).
+`result.error.flatten().fieldErrors` maps directly to a `Record<field, string[]>`,
+which is what makes per-field inline errors straightforward without any extra
+transformation code. No React Hook Form or other form library — `useState` for values
+and errors, plus one `safeParse` call on submit, is the whole implementation.
+
+### Submit is synchronous — no fake processing state
+
+There's no real backend to submit to, so there's nothing to await. On a valid
+submission, `CartDrawer` captures an order summary (item count, formatted total) from
+`state.items` *before* dispatching `CLEAR_CART` — reading `state.items` synchronously
+in the same function call is safe because `dispatch` doesn't mutate `state` in place,
+it schedules the next render, so the closure's `state` reference is still the
+pre-clear cart for the rest of that function. Then `CLEAR_CART` (built in Phase 1,
+otherwise unused until now) and a `view` change to `"success"` happen together. No
+artificial delay or spinner — simulating a fake network round-trip would itself be the
+kind of fake logic the README says to avoid.
+
+### Focus shifts on each view transition, not just on dialog open
+
+`useDialog`'s focus-in-on-open fires exactly once, when the dialog first mounts —
+correct for opening the drawer, but silent on every subsequent view swap, since
+swapping content doesn't remount the dialog. Without an explicit fix, clicking
+"Proceed to Checkout" unmounts the button that had focus and leaves focus nowhere
+(typically falling back to the document body), which is a real regression for
+keyboard/screen-reader users, not a cosmetic one. `CartDrawer` owns one `headingRef`
+on its own header `<h2>` (which already displays "Cart"/"Checkout"/"Order Confirmed"
+depending on `view`) with `tabIndex={-1}`, and a `useEffect` keyed on `view` moves
+focus there whenever the view becomes `"checkout"` or `"success"`. One shared ref for
+one element that already exists in every view, rather than a separate heading per
+view, keeps this from needing three different focus targets to manage. The success
+message also carries `aria-live="polite"` as a second, independent signal — heading
+focus already announces the change to a screen reader, but the two together aren't
+redundant so much as belt-and-suspenders for a state change that isn't a page
+navigation and might otherwise go unannounced.
+
+### A Back button, separate from Close
+
+The checkout view's header row gets a `←` button (visible only in that view) that
+returns to the `cart` view without closing the drawer, alongside the existing `✕` that
+always closes it outright. These are different user intents — "let me reconsider what's
+in my cart" versus "I'm done" — and collapsing them into one control would have made
+one of the two actions unreachable.
+
+### Empty cart during checkout: guarded, but can't actually happen
+
+"Proceed to Checkout" only renders in the non-empty cart-view footer, and the item
+list (with its remove buttons) isn't rendered simultaneously with the checkout form,
+so there's no UI path that both empties the cart and stays on the checkout view at the
+same time — this was reasoned through explicitly rather than assumed. A `useEffect`
+still bounces `view` back to `"cart"` if `view === "checkout" && state.items.length ===
+0` is ever true, as a cheap, explicit guard against that state rather than trusting the
+reasoning alone. No new cart reducer behavior was added for this — it's pure view-state
+management in `CartDrawer`.
+
+### No order number
+
+Skipped entirely rather than shown as a fake one — the checkout requirement lists a
+success message, not order tracking, and inventing an order ID with no backend to
+issue or persist it would be exactly the kind of fake-but-looks-real detail this phase
+was scoped to avoid.
+
+### Verification for checkout
+
+`pnpm typecheck`, `pnpm lint`, and `pnpm build` all clean. `checkoutSchema` was
+verified two ways: first against a hand-written copy of the same zod calls (fast
+iteration), then — for full rigor, matching the standard used in every prior phase —
+against the actual compiled `src/lib/checkout-schema.ts`, confirming its real exports
+(`checkoutSchema`, `checkoutFieldOrder`, `emptyCheckoutFormValues`) match exactly what
+`CheckoutForm.tsx` imports, that a fully valid submission passes, and that
+`CheckoutForm`'s own initial state (`emptyCheckoutFormValues`, all fields blank)
+correctly fails validation on first render before any input. Also verified: every
+required field produces an error when empty while the optional `phone` field does not;
+the "first invalid field to focus" logic correctly identifies the sole invalid field
+in a single-error case; a set of realistic malformed and valid email addresses
+(subdomains, plus-addressing, missing `@`, trailing dot) are rejected/accepted
+correctly; whitespace-only input in a required field fails validation, confirming
+`.trim()` runs before the length check rather than after; and the order summary
+math (`sum(unitPrice * quantity)`, `sum(quantity)`, and the `₪` formatting) matches
+`CartDrawer`'s exact computation against a two-line-item cart. Live-checked against
+the project's running dev server: `/products` and `/` both still return 200 and render
+correctly with the new drawer code loaded. Not verified: real browser interaction with
+the checkout form (typing, submit, focus landing on the right element, Back/Continue
+Shopping clicks) — no browser-automation tool is available in this environment, the
+same limitation noted in every prior phase's UI verification.
