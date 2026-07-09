@@ -1,25 +1,21 @@
-"use client"
+import { getBaseUrl } from "@/lib/get-base-url"
+import ProductGrid from "@/components/ProductGrid"
+import type { ProductsResponse } from "@/types/product"
 
-import { useEffect, useState } from "react"
-import ProductCard from "@/components/ProductCard"
+export default async function ProductsPage() {
+  const baseUrl = await getBaseUrl()
+  const res = await fetch(`${baseUrl}/api/products`, { cache: "no-store" })
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<any>(null)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch products: ${res.status}`)
+  }
 
-  useEffect(() => {
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then((data) => setProducts(data.products))
-  }, [])
+  const data: ProductsResponse = await res.json()
 
   return (
     <main className="max-w-7xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Products</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {products?.map((product: any) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      <ProductGrid products={data.products} />
     </main>
   )
 }
