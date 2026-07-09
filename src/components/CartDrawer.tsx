@@ -97,7 +97,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
               type="button"
               onClick={() => setView("cart")}
               aria-label="Back to cart"
-              className="-ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="-ml-1 inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               <ArrowLeft className="size-5" aria-hidden="true" />
             </button>
@@ -123,7 +123,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
             type="button"
             onClick={onClose}
             aria-label="Close cart"
-            className="ml-auto inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-[oklch(0.9_0.01_75)] bg-white text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+            className="ml-auto inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[oklch(0.9_0.01_75)] bg-white text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             <X className="size-4" aria-hidden="true" />
           </button>
@@ -158,7 +158,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
               <button
                 type="submit"
                 form={CHECKOUT_FORM_ID}
-                className="inline-flex w-full items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 Place order
               </button>
@@ -229,7 +229,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
                 <button
                   type="button"
                   onClick={() => setView("checkout")}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                   Proceed to checkout
                 </button>

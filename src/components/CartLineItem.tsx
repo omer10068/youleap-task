@@ -37,7 +37,7 @@ export default function CartLineItem({
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${item.title} (${item.variantTitle}) from cart`}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-1 focus-visible:outline-none"
+            className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-1 focus-visible:outline-none"
           >
             <X className="size-4" aria-hidden="true" />
           </button>
@@ -54,7 +54,7 @@ export default function CartLineItem({
               onClick={onDecrement}
               disabled={item.quantity <= 1}
               aria-label={`Decrease quantity of ${item.title} (${item.variantTitle})`}
-              className="inline-flex size-8 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-stone-300 disabled:hover:bg-transparent"
+              className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-stone-300 disabled:hover:bg-transparent"
             >
               <Minus className="size-3.5" aria-hidden="true" />
             </button>
@@ -66,7 +66,7 @@ export default function CartLineItem({
               onClick={onIncrement}
               disabled={item.quantity >= item.availableQuantity}
               aria-label={`Increase quantity of ${item.title} (${item.variantTitle})`}
-              className="inline-flex size-8 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-stone-300 disabled:hover:bg-transparent"
+              className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:text-stone-300 disabled:hover:bg-transparent"
             >
               <Plus className="size-3.5" aria-hidden="true" />
             </button>

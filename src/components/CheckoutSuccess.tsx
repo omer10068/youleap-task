@@ -26,7 +26,7 @@ export default function CheckoutSuccess({
       <button
         type="button"
         onClick={onContinueShopping}
-        className="inline-flex w-full max-w-xs items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="inline-flex w-full max-w-xs cursor-pointer items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         Continue shopping
       </button>
