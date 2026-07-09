@@ -6,7 +6,7 @@ import { getStartingPrice } from "@/lib/variant-utils"
 
 type ProductCardProps = {
   product: Product
-  onQuickView: (product: Product) => void
+  onQuickView: (product: Product, trigger: HTMLButtonElement) => void
 }
 
 export default function ProductCard({ product, onQuickView }: ProductCardProps) {
@@ -31,7 +31,12 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
         <h3 className="font-medium text-lg">{product.title}</h3>
         <p className="text-gray-600 mt-1">{formattedPrice}</p>
         <button
-          onClick={() => onQuickView(product)}
+          // Pass the exact clicked element rather than reading
+          // document.activeElement inside the handler — Safari/Firefox
+          // don't always focus a button on click, so activeElement isn't
+          // reliably the trigger. This lets the modal return focus here
+          // precisely, regardless of that browser quirk.
+          onClick={(event) => onQuickView(product, event.currentTarget)}
           className="mt-3 w-full rounded-md bg-black py-2 text-white text-sm hover:bg-gray-800 transition-colors"
         >
           Quick View

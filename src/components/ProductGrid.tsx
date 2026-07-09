@@ -1,7 +1,9 @@
 "use client"
 
+import { useRef, useState } from "react"
 import type { Product } from "@/types/product"
 import ProductCard from "@/components/ProductCard"
+import QuickViewModal from "@/components/QuickViewModal"
 
 /**
  * Server Components can't pass event handler props to Client Components
@@ -18,9 +20,17 @@ export default function ProductGrid({
   products,
   emptyMessage = "No products found.",
 }: ProductGridProps) {
-  function handleQuickView(product: Product) {
-    // A future phase will open the Quick View modal here.
-    console.log("Quick View requested for:", product.id)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+
+  function handleQuickView(product: Product, trigger: HTMLButtonElement) {
+    triggerRef.current = trigger
+    setSelectedProduct(product)
+  }
+
+  function handleCloseQuickView() {
+    setSelectedProduct(null)
+    triggerRef.current?.focus()
   }
 
   if (products.length === 0) {
@@ -28,10 +38,15 @@ export default function ProductGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />
+        ))}
+      </div>
+      {selectedProduct && (
+        <QuickViewModal product={selectedProduct} onClose={handleCloseQuickView} />
+      )}
+    </>
   )
 }
