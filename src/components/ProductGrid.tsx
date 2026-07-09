@@ -9,14 +9,22 @@ import ProductCard from "@/components/ProductCard"
  * receives only plain, serializable `products` data from the Server
  * Component page and owns the Quick View click handler itself.
  */
-export default function ProductGrid({ products }: { products: Product[] }) {
+type ProductGridProps = {
+  products: Product[]
+  emptyMessage?: string
+}
+
+export default function ProductGrid({
+  products,
+  emptyMessage = "No products found.",
+}: ProductGridProps) {
   function handleQuickView(product: Product) {
-    // Phase 3 will open the Quick View modal here.
+    // A future phase will open the Quick View modal here.
     console.log("Quick View requested for:", product.id)
   }
 
   if (products.length === 0) {
-    return <p className="text-gray-600">No products found.</p>
+    return <p className="text-gray-600">{emptyMessage}</p>
   }
 
   return (
