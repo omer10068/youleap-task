@@ -404,3 +404,127 @@ it; and the cart reducer, driven with the exact item shape `QuickViewModal` cons
 confirms two Add to Cart clicks on the same variant produce one line at quantity 2 (not
 two lines), a different variant of the same product produces a second line, and the
 header's count (sum of quantities) reads 3 after those three clicks.
+
+## Phase 5 — Cart drawer and `localStorage` persistence
+
+Adds the cart drawer and, after it existed and could verify against it, persistence.
+Still no checkout — that's Phase 6.
+
+### Implementation order: drawer first, then persistence
+
+There's no real implementation dependency between these two — persistence just
+hydrates/writes whatever `state.items` already is, regardless of who's reading it. The
+reason to build the drawer first is verification quality: before this phase the only
+observable cart signal was the header's bare count number. With the drawer built
+first, it becomes the actual instrument for verifying persistence afterward — add
+items, open the drawer, confirm quantities/thumbnails/totals, reload, reopen, confirm
+it's identical — rather than verifying persistence blind against a single integer.
+
+### Shared dialog mechanics: extracted, but narrowly
+
+`src/lib/use-dialog.ts` is a ~60-line hook shared by `QuickViewModal` and `CartDrawer`,
+covering exactly the interaction mechanics both need: focus-in on open, body scroll
+lock (save/restore the previous `overflow` value, not just `""`), Escape to close, a
+Tab cycle scoped to the dialog's own focusable elements (re-queried on every Tab press,
+since which pills/buttons are enabled changes as selection/cart state changes), and
+backdrop-click-to-close (guarded to `event.target === event.currentTarget` so clicks
+inside the dialog don't bubble up and close it). Deliberately narrow: it takes one
+argument (`onClose`), returns three things (a container ref, an initial-focus ref, a
+backdrop click handler), and renders nothing itself — each dialog still owns its own
+`createPortal` call, markup, and `aria-*` attributes. It does **not** handle
+focus-return-to-trigger, since that's specific to each trigger (`ProductGrid`'s
+Quick View button ref vs. `Header`'s cart button ref), not to the dialog. This is a
+narrower thing than the "generic modal abstraction" ruled out in Phase 4 — it's reuse
+across two consumers that exist right now, not a configurable framework for
+hypothetical future ones. `QuickViewModal` was updated to use it in the same commit as
+the extraction, confirming the hook actually covers its existing behavior with no
+regression (verified via `pnpm build` and the Phase 4 disposable script re-run, both
+unchanged in outcome).
+
+### Drawer state lives in `Header`, not a new wrapper
+
+Same reasoning as Quick View's: `Header` already owns the cart trigger and already
+reads `useCart()`. It now also owns `isDrawerOpen` and conditionally renders
+`CartDrawer` — no `AppShell`/`CartShell` layer for one boolean. The cart icon, static
+since Phase 2 ("deliberately not a clickable link yet... becomes interactive in the
+cart-drawer phase"), is now a real `<button>` with an `aria-label` reflecting the live
+item count.
+
+### `CartLineItem` is a separate component
+
+Mirrors the `VariantSelector`/`QuickViewModal` split from Phase 4: a cart row
+(thumbnail, title, variant, price, quantity controls, line total, remove) is
+comparably complex to `ProductCard`, which is also its own file. Keeps `CartDrawer`
+focused on the dialog shell, empty state, item list, and total.
+
+### Quantity controls: UI-level echo of the reducer's own rule
+
+The `−` button is disabled at quantity 1, the `+` button is disabled at
+`availableQuantity` — both are UI-level enforcement of limits the reducer already
+guarantees (`UPDATE_QUANTITY` clamps to `[1, availableQuantity]`, established in Phase
+1). Disabling `−` at 1 rather than letting it silently remove the item extends the same
+"removal must be a deliberate, separate action" rule from the reducer up into the UI —
+`REMOVE_ITEM` (the explicit "Remove" link) is the only path to zero. Both dispatches go
+through `UPDATE_QUANTITY` with `quantity ± 1`; the reducer's own clamp remains a
+backstop even though the UI shouldn't be able to trigger it once the buttons are
+correctly disabled — verified directly (see below), not just asserted.
+
+### No checkout CTA in the drawer
+
+A disabled "Checkout" button with nowhere to go would be worse than no button at all.
+The real one is added when Phase 6 actually builds checkout.
+
+### `localStorage`: hydration-safe sequencing
+
+The subtle part isn't reading/writing `localStorage` — it's not writing `{ items: [] }`
+over a real saved cart on every single mount before hydration has had a chance to run.
+`CartProvider` always initializes `useReducer` with the plain `{ items: [] }` default
+(so server-rendered and first-client-render markup always match — no SSR/CSR
+mismatch), then a mount-only `useEffect` reads `localStorage` and re-dispatches each
+saved item through the existing `ADD_ITEM` action (rather than adding a new reducer
+action type just for hydration — reuses what's already there and rebuilds the cart the
+same way a user would have, one line at a time), finishing by setting a `hasHydrated`
+flag. The save effect is gated on that flag, and critically the flag is **React state,
+not a ref**: a ref set synchronously inside the hydration effect would already read as
+`true` by the time the save effect's *first* run happens in the same commit (effects
+run in declaration order within one commit), so the save effect would still fire once
+with the stale `{ items: [] }` before the hydration dispatches take effect on the next
+render. Using `useState` instead means the save effect's first-run closure captures
+`hasHydrated = false` from the render it was created in, correctly skipping that write
+entirely — persistence never writes a blank cart over a real one, not even for one
+tick.
+
+### Malformed `localStorage` data: validate the shape, filter items individually
+
+`loadCartItems` never throws: a missing key, invalid JSON, a non-object top level, or a
+non-array `items` field all fall back to `[]`. Beyond that minimum, each item in the
+array is validated individually (`isValidCartItem` checks every `CartItem` field's
+type) and only the valid ones are kept — one corrupted entry doesn't cost the rest of
+a real cart. `saveCartItems` also can't throw (`localStorage.setItem` can fail on quota
+or in some private-browsing modes) — losing persistence silently beats crashing the
+cart. No versioning/migration system: there's exactly one `CartItem` shape in this
+project's history and no prior format to migrate from: the malformed-data guard is
+already the correct behavior for a hypothetical future shape change (reset to empty
+rather than crash), so a version field would be solving a problem this project doesn't
+have.
+
+### Verification for the cart drawer and persistence
+
+`pnpm typecheck`, `pnpm lint`, and `pnpm build` all clean throughout, including
+immediately after the `use-dialog.ts` extraction (confirming no regression in
+`QuickViewModal` before building on top of it). `loadCartItems`/`saveCartItems` are
+exported (mirroring the Phase 1 precedent of exporting `cartReducer` for the same
+reason) and were driven directly with a minimal in-memory `localStorage` mock (no
+jsdom/test framework — not warranted for this): a missing key, invalid JSON, a
+top-level array instead of an object, a non-array `items` field, a top-level `null`,
+and a mixed array of one valid item plus two malformed ones (confirming exactly the
+one valid item survives, not zero and not all three) all resolve to the correct safe
+result; a save-then-load round-trip returns the exact data saved; and a
+`localStorage.setItem` that throws (simulating quota-exceeded/private browsing) is
+swallowed without crashing. The cart reducer was also re-driven with the drawer's exact
+dispatch shapes (`UPDATE_QUANTITY` with `quantity + 1`/`quantity - 1`, `REMOVE_ITEM`)
+to confirm the increment/decrement/remove paths and the cart total
+(`sum(unitPrice * quantity)` across lines) match what `CartDrawer` actually computes.
+Not verified: real browser interaction with the drawer (open/close/focus-return/Tab
+cycle) — no browser-automation tool is available in this environment, same limitation
+noted in every prior phase's UI verification.
