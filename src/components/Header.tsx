@@ -48,7 +48,7 @@ export default function Header() {
             type="button"
             onClick={() => setIsDrawerOpen(true)}
             aria-label={`Open cart, ${itemCount} item${itemCount === 1 ? "" : "s"}`}
-            className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full border bg-white text-stone-700 transition-colors hover:bg-stone-50 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
+            className={`relative inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-[oklch(0.998_0.004_83)] text-stone-700 transition-colors hover:bg-stone-50 hover:text-stone-900 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none ${
               itemCount > 0
                 ? "border-[oklch(0.62_0.11_45)]/35"
                 : "border-[oklch(0.9_0.01_75)]"
