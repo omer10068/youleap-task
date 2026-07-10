@@ -95,7 +95,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/50 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/50 opacity-100 backdrop-blur-sm transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none sm:items-center sm:p-4"
       onClick={handleBackdropClick}
     >
       <div
@@ -104,7 +104,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
         aria-modal="true"
         aria-labelledby="quick-view-title"
         aria-describedby="quick-view-description"
-        className="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-[oklch(0.9_0.01_75)] bg-white shadow-[0_40px_80px_-32px_rgba(0,0,0,0.35)] sm:max-h-[88vh] sm:max-w-4xl sm:rounded-3xl"
+        className="relative flex max-h-[92vh] w-full scale-100 flex-col overflow-hidden rounded-t-3xl border border-[oklch(0.9_0.01_75)] bg-white opacity-100 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.35)] transition-all duration-200 starting:scale-95 starting:opacity-0 motion-reduce:transition-none sm:max-h-[88vh] sm:max-w-4xl sm:rounded-3xl"
       >
         {/* Mobile grabber — decorative sheet styling cue. The close button
             below is desktop-only (Escape/backdrop-click cover mobile), so
