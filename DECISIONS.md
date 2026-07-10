@@ -576,7 +576,7 @@ which is what makes per-field inline errors straightforward without any extra
 transformation code. No React Hook Form or other form library — `useState` for values
 and errors, plus one `safeParse` call on submit, is the whole implementation.
 
-### Submit is synchronous — no fake processing state
+### Initial submit behavior: synchronous client-side success
 
 There's no real backend to submit to, so there's nothing to await. On a valid
 submission, `CartDrawer` captures an order summary (item count, formatted total) from
@@ -584,9 +584,11 @@ submission, `CartDrawer` captures an order summary (item count, formatted total)
 in the same function call is safe because `dispatch` doesn't mutate `state` in place,
 it schedules the next render, so the closure's `state` reference is still the
 pre-clear cart for the rest of that function. Then `CLEAR_CART` (built in Phase 1,
-otherwise unused until now) and a `view` change to `"success"` happen together. No
-artificial delay or spinner — simulating a fake network round-trip would itself be the
-kind of fake logic the README says to avoid.
+otherwise unused until now) and a `view` change to `"success"` happen together, with no
+simulated network round-trip — that would itself be the kind of fake logic the README
+says to avoid. This was later refined in Phase 8 with a short UI-only Place Order
+feedback state (~700ms spinner before the same success transition); no backend or
+payment logic was added.
 
 ### Focus shifts on each view transition, not just on dialog open
 
@@ -831,3 +833,33 @@ What would change with more time, honestly assessed:
   Visually and functionally identical either way — a real code-organization nicety,
   left for a future pass rather than a broad, late-stage mechanical refactor across
   every polished component for a change that's invisible in the rendered UI.
+
+## With more time
+
+Deliberate next investments if this moved beyond the take-home's scope into a real,
+ongoing product — not gaps in what was asked for, but the natural next steps once
+"ship a Quick View feature" becomes "own this storefront."
+
+- **Centralize repeated visual styles.** Promote the OKLCH palette into `@theme`
+  tokens in `globals.css`, and extract shared primitives (button variants, the dialog
+  shell) currently re-implemented per component — see the color-tokens tradeoff above.
+- **Commit a real unit test suite.** Every phase's domain logic (`variant-utils.ts`,
+  the cart reducer, `query-params.ts`, `checkout-schema.ts`) was verified with
+  disposable scripts run against real mock data, but never checked in. Converting
+  those into a small Vitest suite turns one-time verification into regression
+  protection.
+- **Add browser-level interaction tests.** A Playwright smoke suite covering both
+  dialogs' keyboard paths, Add to Cart, and checkout submission — already named as the
+  single highest-value testing gap in Tradeoffs.
+- **Build a real checkout/order backend.** Order persistence, an order ID, payment
+  integration, and idempotent submission handling — deliberately out of scope per the
+  README's "no real backend needed," but the obvious next step for a production
+  checkout.
+- **Harden the product image pipeline.** `SafeImage` today falls back to a static
+  placeholder on any load failure. A production strategy would add retry with backoff,
+  a secondary image source, blur-up placeholders, and failure-rate monitoring instead
+  of a single client-side catch.
+- **A full product detail page, if product direction called for it.** `/product/[id]`
+  stays the starter stub because Quick View already satisfies the README's detail-view
+  requirement; a dedicated PDP would only be worth building if the product genuinely
+  needed a browsable, shareable page beyond the modal.
