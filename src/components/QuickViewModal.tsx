@@ -128,6 +128,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
           <div className="flex flex-col gap-3 bg-[oklch(0.95_0.008_83)] p-4 sm:p-6">
             <div className="relative aspect-square overflow-hidden rounded-2xl border border-[oklch(0.9_0.01_75)]/60 bg-white">
               <SafeImage
+                key={gallery[selectedImageIndex]}
                 src={gallery[selectedImageIndex]}
                 alt={
                   hasMultipleImages
