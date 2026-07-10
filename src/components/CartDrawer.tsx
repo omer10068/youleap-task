@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { Fraunces } from "next/font/google"
-import { ArrowLeft, ShoppingBag, X } from "lucide-react"
+import { ArrowLeft, Loader2, ShoppingBag, X } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { useDialog } from "@/lib/use-dialog"
 import { formatPrice } from "@/lib/format-price"
@@ -13,6 +13,10 @@ import CheckoutForm, { CHECKOUT_FORM_ID } from "@/components/CheckoutForm"
 import CheckoutSuccess from "@/components/CheckoutSuccess"
 
 const fraunces = Fraunces({ subsets: ["latin"], weight: ["600"] })
+
+// Purely a UI feedback delay before showing the success view — not a real
+// submission/network wait, checkout has no backend order-placement logic.
+const PLACE_ORDER_DELAY_MS = 700
 
 type CartDrawerProps = {
   onClose: () => void
@@ -38,7 +42,15 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
 
   const [view, setView] = useState<DrawerView>("cart")
   const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null)
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const placeOrderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (placeOrderTimeoutRef.current) clearTimeout(placeOrderTimeoutRef.current)
+    }
+  }, [])
 
   // A checkout view with an empty cart can't happen through normal use (the
   // "Proceed to Checkout" button only exists in the non-empty footer, and
@@ -66,12 +78,20 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
   const formattedTotal = formatPrice(total, currencyCode)
 
   function handleCheckoutSuccess() {
-    // Captured before CLEAR_CART empties state.items — dispatch doesn't
-    // update `state` synchronously, but the summary needs to survive past
-    // the point where it would.
-    setOrderSummary({ itemCount, formattedTotal })
-    dispatch({ type: "CLEAR_CART" })
-    setView("success")
+    // Validation already passed (CheckoutForm only calls onSuccess after a
+    // successful parse). This delay is UI feedback only — a brief "placing
+    // order" state before the existing success transition — not a real
+    // submission; there's no backend order-placement to wait on.
+    setIsPlacingOrder(true)
+    placeOrderTimeoutRef.current = setTimeout(() => {
+      // Captured before CLEAR_CART empties state.items — dispatch doesn't
+      // update `state` synchronously, but the summary needs to survive past
+      // the point where it would.
+      setOrderSummary({ itemCount, formattedTotal })
+      dispatch({ type: "CLEAR_CART" })
+      setView("success")
+      setIsPlacingOrder(false)
+    }, PLACE_ORDER_DELAY_MS)
   }
 
   function handleContinueShopping() {
@@ -81,7 +101,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex justify-end bg-black/50 opacity-100 backdrop-blur-sm transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none"
       // Backdrop-click-to-close is suppressed during checkout so an
       // accidental click outside the drawer can't discard an in-progress
       // form — the close button and Back button remain the explicit ways
@@ -93,15 +113,16 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"
-        className="flex h-full w-full flex-col bg-[oklch(0.998_0.004_83)] shadow-2xl sm:max-w-115"
+        className="flex h-full w-full translate-x-0 flex-col bg-[oklch(0.998_0.004_83)] shadow-2xl transition-transform duration-200 starting:translate-x-full motion-reduce:transition-none sm:max-w-115"
       >
         <div className="flex shrink-0 items-center gap-3 border-b border-[oklch(0.9_0.01_75)]/70 px-5 py-4 sm:px-6">
           {view === "checkout" && (
             <button
               type="button"
               onClick={() => setView("cart")}
+              disabled={isPlacingOrder}
               aria-label="Back to cart"
-              className="-ml-1 inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="-ml-1 inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
             >
               <ArrowLeft className="size-5" aria-hidden="true" />
             </button>
@@ -162,9 +183,18 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
               <button
                 type="submit"
                 form={CHECKOUT_FORM_ID}
-                className="inline-flex w-full cursor-pointer items-center justify-center rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none"
+                disabled={isPlacingOrder}
+                aria-busy={isPlacingOrder}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-stone-700 focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Place order
+                {isPlacingOrder ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Placing order…
+                  </>
+                ) : (
+                  "Place order"
+                )}
               </button>
             </div>
           </>

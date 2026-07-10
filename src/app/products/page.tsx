@@ -89,7 +89,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </section>
 
         <div className="flex items-center justify-between pb-5">
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-stone-500" aria-live="polite">
             <span className="font-semibold text-stone-900">{gridData.count}</span>{" "}
             {gridData.count === 1 ? "product" : "products"}
           </p>

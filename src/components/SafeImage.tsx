@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { ImageOff } from "lucide-react"
+import { ImageOff, Loader2 } from "lucide-react"
 
 type SafeImageProps = {
   src: string
@@ -22,6 +22,7 @@ type SafeImageProps = {
  */
 export default function SafeImage({ src, alt, sizes, className, priority }: SafeImageProps) {
   const [failed, setFailed] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   if (!src || failed) {
     return (
@@ -36,14 +37,30 @@ export default function SafeImage({ src, alt, sizes, className, priority }: Safe
   }
 
   return (
-    <Image
-      src={src}
-      alt={alt}
-      fill
-      sizes={sizes}
-      priority={priority}
-      className={className}
-      onError={() => setFailed(true)}
-    />
+    <>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        priority={priority}
+        className={className}
+        onLoad={() => setLoading(false)}
+        onError={() => setFailed(true)}
+      />
+      {/* Sits on top of the image (not behind) so it also covers any
+          partially-decoded frame, not just the pre-load gap — removed the
+          instant onLoad fires. Callers whose src can change on an already-
+          mounted instance (QuickViewModal's gallery) must key by src so
+          this state resets per image instead of staying stuck at `false`. */}
+      {loading && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-[oklch(0.95_0.008_83)]"
+          aria-hidden="true"
+        >
+          <Loader2 className="size-6 animate-spin text-stone-300" />
+        </div>
+      )}
+    </>
   )
 }
