@@ -6,8 +6,8 @@ import Header from "@/components/Header"
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata = {
-  title: "Youleap Store — Dev Test",
-  description: "Mid-level developer recruitment test",
+  title: "Youleap Store — Premium Everyday Essentials",
+  description: "Thoughtfully designed products for work, home, and life.",
 }
 
 export default function RootLayout({

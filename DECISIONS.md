@@ -2,6 +2,25 @@
 
 This file is a running log, updated as the project progresses.
 
+## Summary
+
+- **Scope shipped:** product grid with URL-driven search/filter/pagination, Quick View
+  (gallery, variant selector, live price/stock, Add to Cart), a cart drawer with
+  `localStorage` persistence, zod-validated checkout, and a success confirmation — the
+  README's full core requirement set, nothing beyond it.
+- **State management:** React Context + `useReducer` for the cart only; everything else
+  is Server Component data fetching or local component state. No Redux/Zustand/Query.
+- **Data safety:** price, stock, and variant-title parsing all fail safe against
+  malformed or missing data (Phase 1 and Phase 8) rather than throwing or silently
+  defaulting to `0`.
+- **Deliberately deferred:** no browser-automation test suite, no product detail page
+  beyond the starter stub (Quick View covers that need), no quantity stepper in Quick
+  View — see **Tradeoffs** at the end for the full, honest list.
+- **Where to look first:** `src/lib/variant-utils.ts` and `src/lib/cart-context.tsx`
+  (Phase 1) for the core domain logic, `src/components/CartDrawer.tsx` for the
+  cart/checkout view-state machine, and **Phase 8** below for the design-polish and
+  data-resilience pass that shipped after the phases below were first written up.
+
 ## Phase 1 — Domain foundation
 
 Covers `src/types/cart.ts`, `src/lib/variant-utils.ts`, and `src/lib/cart-context.tsx`.
@@ -663,6 +682,114 @@ button, which happened to work before but only by accident of markup order. `use
 stayed the same size and shape — no new option, no new file, no generic frame
 extracted.
 
+## Phase 8 — Design polish, data resilience, and final submission pass
+
+Everything below happened after the Phase 7 review and the original Tradeoffs section
+were written — this section exists so `DECISIONS.md` describes the app that actually
+ships, not an earlier snapshot of it. Covers the `design/polish` branch plus the final
+pre-submission pass.
+
+### Visual polish pass, reference-only
+
+A v0/shadcn-generated mockup (kept locally as `_referrence/`, excluded via
+`.gitignore`, never imported from or committed) was used as a visual reference for a
+warm-cream storefront look — exact OKLCH color values, Fraunces for headings, consistent
+border/shadow/radius language — applied across `/products`, Quick View, and the cart
+drawer/checkout. Nothing was copied architecturally: every component's structure,
+state, and event handling is unchanged from the phases above; what changed is class
+names plus a few purely-visual additions (an image gallery in Quick View, `cursor-
+pointer` fixes for Tailwind's `button { cursor: default }` reset). The color values are
+applied as repeated Tailwind arbitrary values (`bg-[oklch(...)]`) rather than
+centralized `@theme` tokens in `globals.css` — a real, known tradeoff, not an
+oversight (see **Tradeoffs**).
+
+### `formatPrice` extracted to `src/lib/format-price.ts`
+
+Resolves the DRY violation originally flagged below (price formatting was duplicated
+across `ProductCard`, `QuickViewModal`, `CartLineItem`, and `CartDrawer`). All four now
+call one shared `formatPrice(amount, currencyCode)`.
+
+### `SafeImage` — shared image fallback and loading state
+
+`src/components/SafeImage.tsx` wraps `next/image` for all three fill-mode image spots
+(`ProductCard`, `QuickViewModal`, `CartLineItem`): a missing/empty `src` or a failed
+load both render a neutral placeholder icon instead of the browser's broken-image icon,
+and a `loading` state (cleared by `onLoad`) shows a small centered spinner over the
+image area until it's ready, instead of a blank gap. Callers whose `src` can change on
+an already-mounted instance (`QuickViewModal`'s gallery, switching photos) key the
+component by `src` so this state resets per image instead of getting stuck.
+
+### Price and cart data-resilience guards
+
+A review pass asked specifically: what happens if a product/variant is missing price,
+currency, stock, or a variant title, or a persisted cart value is corrupted?
+
+- `getVariantPrice` (new, `variant-utils.ts`) is the single source of truth for "does
+  this variant have a usable price" — never assumes `prices[0]` exists, never falls back
+  to a misleading `0`. `getStartingPrice` returns `Price | undefined` accordingly.
+- `getVariantOptionValues` guards `variant.title` with a `typeof` check before calling
+  `.split()`, failing safe (empty mapping) instead of throwing on a non-string title.
+- `formatPrice` returns `"Price unavailable"` for any non-finite `amount` instead of
+  rendering `₪NaN`.
+- `isValidCartItem` uses `Number.isFinite` (not `typeof === "number"`, which incorrectly
+  accepts `NaN`) for `unitPrice`, `quantity`, and `availableQuantity` when filtering
+  persisted `localStorage` data.
+- `ProductCard` and `QuickViewModal` render "Price unavailable" and disable Add to Cart
+  when no valid matched price exists, instead of crashing or showing a fake price.
+
+Explicitly not done, by design: no full runtime schema validation of the API response,
+no zod parsing of the product shape, no change to the data model — the real mock
+dataset has zero missing/invalid values for any of this today, so these are defensive
+guards against malformed data, not fixes for an active bug.
+
+### Checkout backdrop-dismissal fix
+
+Clicking outside the drawer while the checkout form was open closed the drawer and
+discarded whatever the user had typed — the same backdrop-click-to-close behavior
+that's correct for the cart and success views is wrong mid-form. `CartDrawer`'s
+backdrop `onClick` is now conditional on `view !== "checkout"`; the close button and
+Back button remain the explicit ways to leave that view. `use-dialog.ts` itself is
+unchanged — the fix is local to which handler `CartDrawer` passes to its own backdrop
+element.
+
+### UX micro-polish: pending feedback, entrance transitions, checkout feedback
+
+- **Search/filter/pagination** (`ProductFilters.tsx`, `ProductPagination.tsx`): wrapped
+  in React's `useTransition` so clicking a filter or paging while the mock API's
+  artificial latency is in flight now shows a spinner (search icon) or a disabled state
+  (chips, select, Prev/Next), instead of the page silently doing nothing for up to ~1s.
+  URL-building and debounce logic are unchanged.
+- **Quick View and Cart Drawer** get a small enter-only fade/scale (Quick View) and
+  fade/slide (Cart Drawer) using Tailwind v4's `starting:` variant (native CSS
+  `@starting-style` — no animation library, no JS state), paired with
+  `motion-reduce:transition-none`. No exit animation, no delayed-unmount state.
+- **Place Order**: a ~700ms synthetic delay (explicitly UI feedback only, not a fake
+  network/payment call) shows a spinner + "Placing order…" and disables the submit
+  button (`aria-busy`, `disabled`) before the existing success transition runs. The
+  Back button is also disabled during that window — otherwise a user navigating back to
+  the cart mid-delay would get pulled into the success view a moment later with the
+  cart already cleared.
+
+### Final submission pass
+
+The home page (`src/app/page.tsx`) had never been touched since the starter import and
+still looked like the unstyled scaffold; it now reuses the same OKLCH palette, Fraunces
+heading, and CTA style as `/products`. Root metadata (`layout.tsx`) no longer says "Dev
+Test" / "recruitment test" in the browser tab. This file was brought back in sync with
+the shipped code at the same time.
+
+### Verification for the design-polish and hardening pass
+
+`pnpm typecheck`, `pnpm lint`, and `pnpm build` clean after every change in this phase,
+consistent with every prior phase. The price/cart guards were verified with a
+disposable script exercising the exact edge cases they guard against (empty variants,
+empty prices, `NaN` amounts, non-string variant titles, `NaN`/`Infinity` persisted cart
+values) — 19 assertions, all passing. The `starting:`/`motion-reduce:` CSS was
+confirmed to actually compile into the production output (not silently dropped by
+Tailwind) by grepping the built `.next` CSS for `@starting-style` and
+`prefers-reduced-motion` rules. Not verified: real browser interaction — the same
+limitation noted in every prior phase.
+
 ## Tradeoffs
 
 What would change with more time, honestly assessed:
@@ -694,9 +821,13 @@ What would change with more time, honestly assessed:
   fields, no order persistence or order ID — deliberately, per the README's own "no
   real backend needed" instruction. A real implementation would need all of the above
   plus idempotency handling for double-submits.
-- **Price formatting (`Intl.NumberFormat` currency call) is duplicated in four
-  places** (`ProductCard`, `QuickViewModal`, `CartLineItem`, `CartDrawer`). Each
-  individual phase had a defensible reason not to extract it at the time (respecting
-  that phase's exact approved file scope), but across the whole project this is now a
-  real, findable DRY violation. A small `formatPrice(amount, currencyCode)` helper
-  would be a reasonable five-minute cleanup with more time.
+- ~~Price formatting duplicated in four places~~ — **resolved in Phase 8**:
+  `src/lib/format-price.ts` is now the single shared implementation, used by
+  `ProductCard`, `QuickViewModal`, `CartLineItem`, and `CartDrawer`.
+- **Color values are repeated Tailwind arbitrary values, not centralized theme
+  tokens.** The OKLCH palette (`bg-[oklch(0.985_0.006_83)]` etc.) is applied
+  consistently but redundantly across roughly a dozen files instead of being defined
+  once via a `@theme` block in `globals.css` and referenced by semantic name.
+  Visually and functionally identical either way — a real code-organization nicety,
+  left for a future pass rather than a broad, late-stage mechanical refactor across
+  every polished component for a change that's invisible in the rendered UI.
