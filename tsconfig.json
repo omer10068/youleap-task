@@ -31,5 +31,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "_referrence", "_reference"]
+  "exclude": ["node_modules"]
 }

@@ -25,10 +25,10 @@ function isValidCartItem(value: unknown): value is CartItem {
     typeof item.title === "string" &&
     typeof item.variantTitle === "string" &&
     typeof item.thumbnail === "string" &&
-    typeof item.unitPrice === "number" &&
+    Number.isFinite(item.unitPrice) &&
     typeof item.currencyCode === "string" &&
-    typeof item.quantity === "number" &&
-    typeof item.availableQuantity === "number"
+    Number.isFinite(item.quantity) &&
+    Number.isFinite(item.availableQuantity)
   )
 }
 

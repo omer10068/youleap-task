@@ -5,6 +5,10 @@
  * CartLineItem, CartDrawer); this just gives them one shared source.
  */
 export function formatPrice(amount: number, currencyCode = "ILS"): string {
+  if (!Number.isFinite(amount)) {
+    return "Price unavailable"
+  }
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currencyCode,

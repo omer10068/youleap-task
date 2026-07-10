@@ -15,7 +15,9 @@ type ProductCardProps = {
 
 export default function ProductCard({ product, onQuickView }: ProductCardProps) {
   const startingPrice = getStartingPrice(product)
-  const formattedPrice = formatPrice(startingPrice.amount, startingPrice.currency_code)
+  const formattedPrice = startingPrice
+    ? formatPrice(startingPrice.amount, startingPrice.currency_code)
+    : "Price unavailable"
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-[oklch(0.9_0.01_75)] bg-[oklch(0.998_0.004_83)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-[oklch(0.22_0.012_60)]/15 hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.35)]">

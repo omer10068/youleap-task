@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/format-price"
 import {
   findMatchingVariant,
   getVariantOptionValues,
+  getVariantPrice,
   isVariantInStock,
 } from "@/lib/variant-utils"
 import VariantSelector from "@/components/VariantSelector"
@@ -55,8 +56,9 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   }
 
   const matchedVariant = findMatchingVariant(product, selection)
+  const matchedPrice = matchedVariant ? getVariantPrice(matchedVariant) : undefined
   const inStock = matchedVariant ? isVariantInStock(matchedVariant) : false
-  const canAddToCart = Boolean(matchedVariant) && inStock
+  const canAddToCart = Boolean(matchedVariant) && Boolean(matchedPrice) && inStock
 
   function handleSelect(optionId: string, value: string) {
     setSelection((prev) => ({ ...prev, [optionId]: value }))
@@ -64,7 +66,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   }
 
   function handleAddToCart() {
-    if (!matchedVariant || !canAddToCart) return
+    if (!matchedVariant || !matchedPrice || !canAddToCart) return
 
     dispatch({
       type: "ADD_ITEM",
@@ -74,8 +76,8 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
         title: product.title,
         variantTitle: matchedVariant.title,
         thumbnail: product.thumbnail,
-        unitPrice: matchedVariant.prices[0].amount,
-        currencyCode: matchedVariant.prices[0].currency_code,
+        unitPrice: matchedPrice.amount,
+        currencyCode: matchedPrice.currency_code,
         quantity: 1,
         availableQuantity: matchedVariant.inventory_quantity,
       },
@@ -85,9 +87,11 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
     setTimeout(() => setJustAdded(false), ADDED_CONFIRMATION_MS)
   }
 
-  const formattedPrice = matchedVariant
-    ? formatPrice(matchedVariant.prices[0].amount, matchedVariant.prices[0].currency_code)
-    : null
+  const formattedPrice = !matchedVariant
+    ? null
+    : matchedPrice
+      ? formatPrice(matchedPrice.amount, matchedPrice.currency_code)
+      : "Price unavailable"
 
   return createPortal(
     <div
@@ -239,7 +243,13 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                 ) : (
                   <>
                     <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-                    {!matchedVariant ? "Unavailable" : !inStock ? "Out of stock" : "Add to Cart"}
+                    {!matchedVariant
+                      ? "Unavailable"
+                      : !matchedPrice
+                        ? "Price unavailable"
+                        : !inStock
+                          ? "Out of stock"
+                          : "Add to Cart"}
                   </>
                 )}
               </button>
