@@ -1,5 +1,6 @@
 "use client"
 
+import { Check } from "lucide-react"
 import type { Product } from "@/types/product"
 import { getAvailableOptionValues } from "@/lib/variant-utils"
 
@@ -11,19 +12,23 @@ type VariantSelectorProps = {
 
 export default function VariantSelector({ product, selection, onSelect }: VariantSelectorProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {product.options.map((option) => {
         const availableValues = getAvailableOptionValues(product, selection, option.id)
+        const selectedValue = selection[option.id]
 
         return (
-          <div key={option.id}>
-            <span className="mb-1.5 block text-sm font-medium text-gray-700">
+          <fieldset key={option.id}>
+            <legend className="mb-2 flex items-baseline gap-2 text-sm font-medium text-stone-900">
               {option.title}
-            </span>
-            <div role="group" aria-label={option.title} className="flex flex-wrap gap-2">
+              {selectedValue && (
+                <span className="text-xs font-normal text-stone-500">{selectedValue}</span>
+              )}
+            </legend>
+            <div className="flex flex-wrap gap-2">
               {option.values.map((value) => {
                 const isAvailable = availableValues.includes(value)
-                const isSelected = selection[option.id] === value
+                const isSelected = selectedValue === value
 
                 return (
                   <button
@@ -32,20 +37,22 @@ export default function VariantSelector({ product, selection, onSelect }: Varian
                     disabled={!isAvailable}
                     onClick={() => onSelect(option.id, value)}
                     aria-pressed={isSelected}
-                    className={`rounded-md border px-3 py-1.5 text-sm ${
+                    aria-label={`${option.title}: ${value}${isAvailable ? "" : " (unavailable)"}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/20 focus-visible:ring-offset-2 ${
                       isSelected
-                        ? "border-black bg-black text-white"
+                        ? "cursor-pointer border-stone-900 bg-stone-900 text-white"
                         : isAvailable
-                          ? "border-gray-300 bg-white text-gray-700 hover:border-black"
-                          : "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-300 line-through"
+                          ? "cursor-pointer border-stone-300 bg-white text-stone-700 hover:border-stone-900/40 hover:bg-stone-50"
+                          : "cursor-not-allowed border-dashed border-stone-300 bg-transparent text-stone-300 line-through hover:border-stone-300 hover:bg-transparent"
                     }`}
                   >
+                    {isSelected && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
                     {value}
                   </button>
                 )
               })}
             </div>
-          </div>
+          </fieldset>
         )
       })}
     </div>

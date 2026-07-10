@@ -12,17 +12,51 @@ import type { Price, Product, ProductVariant } from "@/types/product"
  */
 const VARIANT_TITLE_SEPARATOR = " - "
 
-export function getStartingPrice(product: Product): Price {
-  return product.variants.reduce<Price>((cheapest, variant) => {
-    const price = variant.prices[0]
-    return price.amount < cheapest.amount ? price : cheapest
-  }, product.variants[0].prices[0])
+/**
+ * The single price for a variant, or undefined if it has no prices array,
+ * an empty one, or a non-finite amount. Never assumes `prices[0]` exists —
+ * callers get a safe "no valid price" signal instead of a crash or a
+ * silent 0.
+ */
+export function getVariantPrice(variant: ProductVariant): Price | undefined {
+  const price = variant.prices?.[0]
+  if (!price || !Number.isFinite(price.amount)) return undefined
+  return price
+}
+
+/**
+ * The lowest valid price across a product's variants, or undefined if the
+ * product has no variants or none of them have a valid price. Deliberately
+ * never falls back to 0 — "no valid price" and "priced at 0" are different
+ * states, and callers (ProductCard) are expected to render an explicit
+ * "Price unavailable" for the former rather than a misleading amount.
+ */
+export function getStartingPrice(product: Product): Price | undefined {
+  const validPrices = product.variants
+    .map(getVariantPrice)
+    .filter((price): price is Price => price !== undefined)
+
+  if (validPrices.length === 0) return undefined
+
+  return validPrices.reduce((cheapest, price) =>
+    price.amount < cheapest.amount ? price : cheapest
+  )
 }
 
 export function getVariantOptionValues(
   product: Product,
   variant: ProductVariant
 ): Record<string, string> {
+  if (typeof variant.title !== "string") {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[variant-utils] Variant "${variant.id}" on product "${product.id}" ` +
+          `has a non-string title; cannot resolve its option values.`
+      )
+    }
+    return {}
+  }
+
   const values = variant.title.split(VARIANT_TITLE_SEPARATOR)
 
   if (values.length < product.options.length) {

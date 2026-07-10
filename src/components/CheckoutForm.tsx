@@ -17,10 +17,19 @@ type FieldErrors = Partial<Record<keyof CheckoutFormValues, string>>
 const fieldLabels: Record<keyof CheckoutFormValues, string> = {
   fullName: "Full name",
   email: "Email",
-  phone: "Phone (optional)",
+  phone: "Phone",
   address: "Street address",
   city: "City",
   postalCode: "Postal code",
+}
+
+const fieldOptional: Record<keyof CheckoutFormValues, boolean> = {
+  fullName: false,
+  email: false,
+  phone: true,
+  address: false,
+  city: false,
+  postalCode: false,
 }
 
 const fieldInputTypes: Record<keyof CheckoutFormValues, string> = {
@@ -31,6 +40,12 @@ const fieldInputTypes: Record<keyof CheckoutFormValues, string> = {
   city: "text",
   postalCode: "text",
 }
+
+// This is the form CartDrawer's footer submit button targets via
+// `form="checkout-form"` — the button lives outside this component so it
+// can stay anchored in the drawer footer, but submission still runs
+// entirely through this form's own onSubmit below.
+export const CHECKOUT_FORM_ID = "checkout-form"
 
 export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const [values, setValues] = useState<CheckoutFormValues>(emptyCheckoutFormValues)
@@ -49,6 +64,7 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
 
   return (
     <form
+      id={CHECKOUT_FORM_ID}
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
@@ -74,7 +90,7 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         setErrors({})
         onSuccess(result.data)
       }}
-      className="flex flex-1 flex-col gap-4 overflow-y-auto"
+      className="space-y-4"
     >
       {checkoutFieldOrder.map((field) => {
         const inputId = `checkout-${field}`
@@ -83,8 +99,11 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
 
         return (
           <div key={field}>
-            <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-stone-900">
               {fieldLabels[field]}
+              {fieldOptional[field] && (
+                <span className="ml-1 font-normal text-stone-400">(optional)</span>
+              )}
             </label>
             <input
               id={inputId}
@@ -94,25 +113,20 @@ export default function CheckoutForm({ onSuccess }: CheckoutFormProps) {
               onChange={(event) => handleChange(field, event.target.value)}
               aria-invalid={Boolean(error)}
               aria-describedby={error ? errorId : undefined}
-              className={`w-full rounded-md border px-3 py-2 text-sm ${
-                error ? "border-red-500" : "border-gray-300"
+              className={`w-full rounded-xl border bg-[oklch(0.985_0.006_83)] px-3.5 py-2.5 text-sm text-stone-900 shadow-sm transition-colors outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-offset-2 focus:ring-offset-[oklch(0.998_0.004_83)] ${
+                error
+                  ? "border-red-400 focus:ring-red-500"
+                  : "border-[oklch(0.9_0.01_75)] hover:border-[oklch(0.22_0.012_60)]/30 focus:ring-[oklch(0.62_0.11_45)]"
               }`}
             />
             {error && (
-              <p id={errorId} className="mt-1 text-xs text-red-600">
+              <p id={errorId} className="mt-1.5 text-xs font-medium text-red-600">
                 {error}
               </p>
             )}
           </div>
         )
       })}
-
-      <button
-        type="submit"
-        className="mt-2 w-full rounded-md bg-black py-2 text-sm text-white transition-colors hover:bg-gray-800"
-      >
-        Place Order
-      </button>
     </form>
   )
 }

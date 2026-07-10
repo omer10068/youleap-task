@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import { PackageSearch } from "lucide-react"
 import type { Product } from "@/types/product"
 import ProductCard from "@/components/ProductCard"
 import QuickViewModal from "@/components/QuickViewModal"
@@ -34,12 +35,24 @@ export default function ProductGrid({
   }
 
   if (products.length === 0) {
-    return <p className="text-gray-600">{emptyMessage}</p>
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-stone-300 bg-white/60 px-6 py-20 text-center">
+        <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-stone-100 text-stone-400">
+          <PackageSearch className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <div className="space-y-1">
+          <h3 className="text-lg font-medium text-stone-900">{emptyMessage}</h3>
+          <p className="mx-auto max-w-sm text-sm text-stone-500">
+            Try adjusting your search or clearing the active filters.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} onQuickView={handleQuickView} />
         ))}
