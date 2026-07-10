@@ -82,7 +82,11 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm"
-      onClick={handleBackdropClick}
+      // Backdrop-click-to-close is suppressed during checkout so an
+      // accidental click outside the drawer can't discard an in-progress
+      // form — the close button and Back button remain the explicit ways
+      // to leave that view.
+      onClick={view === "checkout" ? undefined : handleBackdropClick}
     >
       <div
         ref={containerRef}
